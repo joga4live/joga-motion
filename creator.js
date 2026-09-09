@@ -4,7 +4,7 @@
    ═══════════════════════════════════ */
 
 // ── Config ──
-var WORKER_URL = 'https://joga-motion-api.TU-USUARIO.workers.dev'; // ← replace after deploy
+var WORKER_URL = 'https://joga-motion-api.omhotien90.workers.dev'; // ← replace after deploy
 
 // ── State ──
 var state = {
