@@ -4,7 +4,7 @@
    ═══════════════════════════════════ */
 
 // ── Config ──
-var WORKER_URL = 'https://joga-motion-api.omhotien90.workers.dev'; // ← replace after deploy
+var WORKER_URL = 'https://joga-motion-api.omhotien90.workers.dev';
 
 // ── State ──
 var state = {
@@ -97,7 +97,7 @@ function triggerUpload() { document.getElementById('fileInput').click(); }
 function handleFile(input) {
   var file = input.files[0];
   if (!file) return;
-  if (file.size > 10 * 1024 * 1024) { showToast(t('c_err_big') || 'Image too large (max 10MB)'); return; }
+  if (file.size > 10 * 1024 * 1024) { showToast(t('c_err_big')); return; }
   state.imageFile = file;
   var reader = new FileReader();
   reader.onload = function(e) {
@@ -162,6 +162,7 @@ function generateVideo() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       image_b64: state.imageB64,
+      content_type: state.imageFile.type,
       prompt: fullPrompt,
       duration: state.selectedDuration,
     }),
@@ -178,7 +179,7 @@ function generateVideo() {
   })
   .catch(function(err) {
     console.error(err);
-    showToast(t('c_err_api'));
+    showToast(t('c_err_api') + ' (' + err.message + ')');
     setGenerating(false);
     hideProgress();
   });
@@ -215,7 +216,7 @@ function pollTask(taskId) {
         }, 800);
       } else if (data.status === 'failed') {
         clearInterval(interval);
-        showToast(t('c_err_api'));
+        showToast(t('c_err_api') + (data.error ? ' (' + data.error + ')' : ''));
         setGenerating(false);
         hideProgress();
       }
@@ -251,10 +252,9 @@ function showResult(url) {
 }
 
 function downloadVideo() {
-  if (!state.resultUrl) return;
+  if (!state.taskId) return;
   var a = document.createElement('a');
-  a.href = state.resultUrl;
-  a.download = 'joga-motion-' + Date.now() + '.mp4';
+  a.href = WORKER_URL + '/download?task_id=' + encodeURIComponent(state.taskId);
   a.click();
 }
 
