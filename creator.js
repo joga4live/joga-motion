@@ -1,15 +1,15 @@
 /* ═══════════════════════════════════
-   JOGA MOTION — Creator Logic
-   Connects to Kling AI via CF Worker
+   JOGA MOTION — Creator Logic v3
+   Higgsfield AI image-to-video
    ═══════════════════════════════════ */
 
-// ── Config ──
-var WORKER_URL = 'https://joga-motion-api.omhotien90.workers.dev'; // ← replace after deploy
+var WORKER_URL = 'https://joga-motion-api.omhotien90.workers.dev';
 
-// ── State ──
 var state = {
   imageFile: null,
   imageB64: null,
+  imageMime: null,
+  publicImageUrl: null,
   selectedStyle: 'cinematic',
   selectedDuration: 5,
   intensity: 5,
@@ -17,7 +17,6 @@ var state = {
   resultUrl: null,
 };
 
-// ── Quick Prompts ──
 var QUICK_PROMPTS = {
   es: [
     'Zoom suave hacia el horizonte con luz dorada al atardecer',
@@ -44,7 +43,7 @@ function initCreator() {
 
 function renderQuickPrompts() {
   var lang = getLang();
-  var prompts = QUICK_PROMPTS[lang] || QUICK_PROMPTS.es;
+  var prompts = QUICK_PROMPTS[lang] || QUICK_PROMPTS.en;
   var wrap = document.getElementById('quickPrompts');
   if (!wrap) return;
   wrap.innerHTML = prompts.map(function(p) {
@@ -57,7 +56,6 @@ function usePrompt(btn) {
   if (inp) inp.value = btn.textContent;
 }
 
-// Re-render quick prompts on lang change
 var _origOnLangChange = (typeof onLangChange === 'function') ? onLangChange : null;
 window.onLangChange = function() {
   renderQuickPrompts();
@@ -97,11 +95,14 @@ function triggerUpload() { document.getElementById('fileInput').click(); }
 function handleFile(input) {
   var file = input.files[0];
   if (!file) return;
-  if (file.size > 10 * 1024 * 1024) { showToast(t('c_err_big') || 'Image too large (max 10MB)'); return; }
+  if (file.size > 10 * 1024 * 1024) { showToast('Image too large (max 10MB)'); return; }
   state.imageFile = file;
+  state.imageMime = file.type || 'image/jpeg';
+  state.publicImageUrl = null; // reset
+
   var reader = new FileReader();
   reader.onload = function(e) {
-    state.imageB64 = e.target.result.split(',')[1]; // base64 only
+    state.imageB64 = e.target.result.split(',')[1];
     var img = document.getElementById('previewImg');
     img.src = e.target.result;
     img.style.display = 'block';
@@ -137,77 +138,88 @@ function onDrop(e) {
 
 // ── Generate ──
 function generateVideo() {
-  if (!state.imageB64) { showToast(t('c_err_no_img')); return; }
+  if (!state.imageB64) { showToast('Upload an image first'); return; }
   var prompt = document.getElementById('promptInput').value.trim();
-  if (!prompt) { showToast(t('c_err_no_prompt')); return; }
+  if (!prompt) { showToast('Describe the motion'); return; }
 
   setGenerating(true);
   showProgress();
+  setStep('Uploading image...', 10);
 
-  // Build full prompt with style modifier
-  var styleMap = {
-    cinematic: 'cinematic camera motion, film look, depth of field',
-    smooth: 'smooth gentle movement, slow motion feel',
-    dynamic: 'dynamic energetic motion, quick camera movements',
-    dreamy: 'dreamy ethereal motion, soft glowing particles',
-    zoom: 'slow zoom in, Ken Burns effect, subtle push forward',
-    pan: 'slow panoramic camera pan, sweeping landscape motion',
-  };
-  var fullPrompt = prompt + '. ' + (styleMap[state.selectedStyle] || '') + '. Motion intensity: ' + state.intensity + '/10.';
-
-  setStep(t('c_step_uploading'), 15);
-
-  fetch(WORKER_URL + '/generate', {
+  // Step 1: upload image to worker cache → get public URL
+  fetch(WORKER_URL + '/upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      image_b64: state.imageB64,
-      prompt: fullPrompt,
-      duration: state.selectedDuration,
-    }),
+    body: JSON.stringify({ image_b64: state.imageB64, mime: state.imageMime }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(up) {
+    if (!up.image_url) throw new Error(up.error || 'Upload failed');
+    state.publicImageUrl = up.image_url;
+
+    // Step 2: generate video
+    setStep('Sending to AI...', 25);
+    var stylePrompts = {
+      cinematic: 'cinematic camera motion, film look, depth of field',
+      smooth:    'smooth gentle movement, slow motion feel',
+      dynamic:   'dynamic energetic motion, quick camera movements',
+      dreamy:    'dreamy ethereal motion, soft glowing particles',
+      zoom:      'slow zoom in, Ken Burns effect, subtle push forward',
+      pan:       'slow panoramic camera pan, sweeping motion',
+    };
+    var fullPrompt = prompt + '. ' + (stylePrompts[state.selectedStyle] || '') + '. Motion intensity: ' + state.intensity + '/10.';
+
+    return fetch(WORKER_URL + '/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image_url: state.publicImageUrl,
+        prompt: fullPrompt,
+        duration: state.selectedDuration,
+      }),
+    });
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.task_id) {
       state.taskId = data.task_id;
-      setStep(t('c_step_queued'), 30);
+      setStep('AI is animating your image...', 40);
       pollTask(data.task_id);
     } else {
-      throw new Error(data.error || 'No task_id returned');
+      throw new Error(data.error || JSON.stringify(data.raw) || 'No task_id returned');
     }
   })
   .catch(function(err) {
-    console.error(err);
-    showToast(t('c_err_api'));
+    console.error('Generate error:', err);
+    showToast('Error: ' + err.message);
     setGenerating(false);
     hideProgress();
   });
 }
 
 function pollTask(taskId) {
-  setStep(t('c_step_animating'), 55);
   var attempts = 0;
-  var maxAttempts = 60; // 5 min max (5s intervals)
+  var maxAttempts = 72; // 6 min max (5s intervals)
 
   var interval = setInterval(function() {
     attempts++;
     if (attempts > maxAttempts) {
       clearInterval(interval);
-      showToast(t('c_err_api'));
+      showToast('Timeout — try again');
       setGenerating(false);
       hideProgress();
       return;
     }
 
-    var pct = Math.min(55 + (attempts / maxAttempts) * 35, 90);
-    setStep(t('c_step_animating'), pct);
+    var pct = Math.min(40 + (attempts / maxAttempts) * 50, 90);
+    setStep('AI is animating... ' + Math.round(pct) + '%', pct);
 
     fetch(WORKER_URL + '/status?task_id=' + taskId)
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.status === 'completed' && data.video_url) {
         clearInterval(interval);
-        setStep(t('c_step_finalizing'), 95);
+        setStep('Finalizing...', 95);
         setTimeout(function() {
           showResult(data.video_url);
           setGenerating(false);
@@ -215,21 +227,20 @@ function pollTask(taskId) {
         }, 800);
       } else if (data.status === 'failed') {
         clearInterval(interval);
-        showToast(t('c_err_api'));
+        showToast('Generation failed — try again');
         setGenerating(false);
         hideProgress();
       }
-      // else still processing — continue polling
     })
-    .catch(function() { /* ignore transient errors */ });
+    .catch(function() {});
   }, 5000);
 }
 
 // ── UI helpers ──
 function setGenerating(isGen) {
-  document.getElementById('genBtn').disabled = isGen;
+  var btn = document.getElementById('genBtn');
+  if (btn) btn.disabled = isGen;
 }
-
 function showProgress() {
   document.getElementById('progPanel').classList.add('show');
   document.getElementById('resultPanel').classList.remove('show');
@@ -242,14 +253,12 @@ function setStep(label, pct) {
   document.getElementById('progStep').textContent = label;
   document.getElementById('progBar').style.width = pct + '%';
 }
-
 function showResult(url) {
   state.resultUrl = url;
   var video = document.getElementById('resultVideo');
   video.src = url;
   document.getElementById('resultPanel').classList.add('show');
 }
-
 function downloadVideo() {
   if (!state.resultUrl) return;
   var a = document.createElement('a');
@@ -257,16 +266,13 @@ function downloadVideo() {
   a.download = 'joga-motion-' + Date.now() + '.mp4';
   a.click();
 }
-
 function resetCreator() {
   document.getElementById('resultPanel').classList.remove('show');
   document.getElementById('resultVideo').src = '';
   state.resultUrl = null;
   state.taskId = null;
-  // Scroll back to top of creator
   document.querySelector('.creator-hero').scrollIntoView({ behavior: 'smooth' });
 }
-
 function showToast(msg) {
   var toast = document.getElementById('toast');
   toast.textContent = msg;
