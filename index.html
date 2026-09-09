@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Joga Motion — Imagen a Video con IA</title>
+  <meta name="description" content="Sube cualquier imagen y crea videos cinematográficos con inteligencia artificial. Parte de Joga Intelligence." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Playfair+Display:wght@400;700&family=Space+Grotesk:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="pip"></div>
+    <span class="joga">Joga</span><span class="motion">Motion</span>
+  </div>
+  <div class="nav-right">
+    <a href="https://joga4live.github.io/joga-intelligence" class="nav-link nav-link-hide" data-t="nav_back"></a>
+    <a href="https://joga4live.github.io/joga-books" class="nav-link nav-link-hide" data-t="nav_books"></a>
+    <button id="lang-toggle" onclick="toggleLang()">EN</button>
+    <a href="creator.html" class="nav-btn" data-t="nav_create"></a>
+  </div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="hero-mesh"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-radial"></div>
+  <div class="hero-corner-l"></div>
+  <div class="hero-corner-r"></div>
+
+  <div class="hero-inner">
+    <div class="hero-pill">
+      <span class="hero-pill-dot"></span>
+      <span data-t="hero_tag"></span>
+    </div>
+
+    <h1 class="hero-h1">
+      <span class="h1-top" data-t="hero_ecosystem"></span>
+      <span class="h1-joga" data-t="hero_h1_1"></span>
+      <span class="h1-motion" data-text="MOTION" data-t="hero_h1_2"></span>
+    </h1>
+
+    <p class="hero-sub" data-t="hero_sub"></p>
+
+    <div class="hero-actions">
+      <a href="creator.html" class="btn-hero-primary">
+        <span data-t="hero_cta"></span>
+        <span class="arrow">→</span>
+      </a>
+      <a href="#how" class="btn-hero-ghost" data-t="hero_scroll"></a>
+    </div>
+
+    <div class="hero-scroll">
+      <div class="scroll-line"></div>
+      <span class="scroll-label">Scroll</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ SHOWCASE CARDS ══ -->
+<div class="showcase">
+  <p class="showcase-label" data-t="showcase_label"></p>
+  <div class="cards-row">
+    <div class="sc-card" style="background:linear-gradient(135deg,#1A1030,#0D0820)">
+      <div class="sc-card-bg"><span class="sc-icon">🌌</span></div>
+      <div class="sc-play">▶</div>
+      <div class="sc-bottom"><p class="sc-tag" data-t="sc_cosmos"></p></div>
+    </div>
+    <div class="sc-card" style="background:linear-gradient(135deg,#0D1A10,#081208)">
+      <div class="sc-card-bg"><span class="sc-icon">🌿</span></div>
+      <div class="sc-play">▶</div>
+      <div class="sc-bottom"><p class="sc-tag" data-t="sc_nature"></p></div>
+    </div>
+    <div class="sc-card" style="background:linear-gradient(135deg,#1A0D10,#120808)">
+      <div class="sc-card-bg"><span class="sc-icon">📖</span></div>
+      <div class="sc-play">▶</div>
+      <div class="sc-bottom"><p class="sc-tag" data-t="sc_books"></p></div>
+    </div>
+    <div class="sc-card" style="background:linear-gradient(135deg,#0D0F1A,#080D12)">
+      <div class="sc-card-bg"><span class="sc-icon">🏙️</span></div>
+      <div class="sc-play">▶</div>
+      <div class="sc-bottom"><p class="sc-tag" data-t="sc_city"></p></div>
+    </div>
+    <div class="sc-card" style="background:linear-gradient(135deg,#1A1510,#120F08)">
+      <div class="sc-card-bg"><span class="sc-icon">🎨</span></div>
+      <div class="sc-play">▶</div>
+      <div class="sc-bottom"><p class="sc-tag" data-t="sc_art"></p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOW IT WORKS ══ -->
+<section class="how" id="how">
+  <div class="how-bg"></div>
+  <div class="container">
+    <div class="how-header">
+      <p class="s-label" data-t="how_label"></p>
+      <h2 class="s-title" data-t="how_title"></h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num"><span data-t="step1_n"></span></div>
+        <h3 data-t="step1_title"></h3>
+        <p data-t="step1_desc"></p>
+      </div>
+      <div class="step">
+        <div class="step-num"><span data-t="step2_n"></span></div>
+        <h3 data-t="step2_title"></h3>
+        <p data-t="step2_desc"></p>
+      </div>
+      <div class="step">
+        <div class="step-num"><span data-t="step3_n"></span></div>
+        <h3 data-t="step3_title"></h3>
+        <p data-t="step3_desc"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FEATURES ══ -->
+<section class="features">
+  <div class="features-bg"></div>
+  <div class="container">
+    <p class="s-label" data-t="feat_label"></p>
+    <h2 class="s-title" data-t="feat_title"></h2>
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-glow"></div>
+        <div class="feat-icon-wrap">🖼️</div>
+        <h3 data-t="feat1_title"></h3>
+        <p data-t="feat1_desc"></p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-glow"></div>
+        <div class="feat-icon-wrap">⚡</div>
+        <h3 data-t="feat2_title"></h3>
+        <p data-t="feat2_desc"></p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-glow"></div>
+        <div class="feat-icon-wrap">🎬</div>
+        <h3 data-t="feat3_title"></h3>
+        <p data-t="feat3_desc"></p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-glow"></div>
+        <div class="feat-icon-wrap">📥</div>
+        <h3 data-t="feat4_title"></h3>
+        <p data-t="feat4_desc"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ECOSYSTEM ══ -->
+<section class="ecosystem">
+  <div class="container">
+    <div class="eco-header">
+      <p class="s-label" data-t="eco_label"></p>
+      <h2 class="s-title" data-t="eco_title"></h2>
+      <p class="eco-sub" data-t="eco_sub"></p>
+    </div>
+    <div class="eco-grid">
+      <div class="eco-card">
+        <span class="eco-logo">Joga Intelligence</span>
+        <h3 data-t="eco_int_title"></h3>
+        <p data-t="eco_int_desc"></p>
+        <a href="https://joga4live.github.io/joga-intelligence" class="eco-arrow">Visitar →</a>
+      </div>
+      <div class="eco-card">
+        <span class="eco-logo">Joga Books</span>
+        <h3 data-t="eco_books_title"></h3>
+        <p data-t="eco_books_desc"></p>
+        <a href="https://joga4live.github.io/joga-books" class="eco-arrow">Visitar →</a>
+      </div>
+      <div class="eco-card">
+        <span class="eco-logo">Joga Audio</span>
+        <h3 data-t="eco_audio_title"></h3>
+        <p data-t="eco_audio_desc"></p>
+        <a href="https://joga4live.github.io/joga-audio" class="eco-arrow">Visitar →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PRICING ══ -->
+<section class="pricing">
+  <div class="pricing-bg"></div>
+  <div class="container">
+    <p class="s-label" style="justify-content:center" data-t="price_label"></p>
+    <h2 class="s-title" data-t="price_title"></h2>
+
+    <div class="pricing-cards">
+      <!-- Free -->
+      <div class="p-card free">
+        <p class="p-tier" data-t="price_free"></p>
+        <p class="p-price">$0</p>
+        <p class="p-desc" data-t="price_free_desc"></p>
+        <ul class="p-features">
+          <li data-t="pf1"></li>
+          <li data-t="pf2"></li>
+          <li data-t="pf3"></li>
+        </ul>
+        <a href="creator.html" class="btn-free" data-t="price_free_cta"></a>
+      </div>
+      <!-- Pro -->
+      <div class="p-card featured">
+        <span class="p-badge" data-t="price_popular"></span>
+        <p class="p-tier" data-t="price_pro"></p>
+        <p class="p-price">$19<span>/mes</span></p>
+        <p class="p-desc" data-t="price_pro_desc"></p>
+        <ul class="p-features">
+          <li data-t="pp1"></li>
+          <li data-t="pp2"></li>
+          <li data-t="pp3"></li>
+          <li data-t="pp4"></li>
+        </ul>
+        <a href="creator.html" class="btn-pro" data-t="price_pro_cta"></a>
+      </div>
+    </div>
+
+    <a href="creator.html" class="pricing-cta" data-t="price_main_cta"></a>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="footer-logo">Joga<span class="v">Motion</span></div>
+        <p class="footer-tagline" data-t="footer_tagline"></p>
+      </div>
+      <div class="footer-links">
+        <a href="https://joga4live.github.io/joga-intelligence" data-t="nav_back"></a>
+        <a href="https://joga4live.github.io/joga-books" data-t="nav_books"></a>
+        <a href="creator.html" data-t="nav_create"></a>
+      </div>
+      <p class="footer-part" data-t="footer_part"> <a href="https://joga4live.github.io/joga-intelligence">Joga Intelligence</a></p>
+    </div>
+    <p class="footer-copy">© 2025 Joga Intelligence. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="i18n.js"></script>
+<script>
+// Extend i18n with landing-specific strings
+Object.assign(STRINGS.es, {
+  hero_ecosystem: 'Joga Intelligence',
+  hero_h1_1: 'JOGA',
+  hero_h1_2: 'MOTION',
+  hero_sub: 'Sube cualquier imagen. Describe el movimiento. Obtén un video que cobra vida en segundos.',
+  hero_cta: 'CREAR MI VIDEO',
+  hero_scroll: 'Ver cómo funciona',
+  showcase_label: 'Posibilidades infinitas',
+  sc_cosmos: 'Cosmos · Cinemático',
+  sc_nature: 'Naturaleza · Suave',
+  sc_books: 'Portadas · Zoom',
+  sc_city: 'Ciudad · Dinámico',
+  sc_art: 'Arte · Onírico',
+  how_label: 'Proceso',
+  how_title: 'Tres pasos.\nUn video.',
+  step1_n:'01', step1_title:'Sube tu imagen', step1_desc:'Cualquier foto, ilustración o arte. Desde tu teléfono, cámara, diseño o IA.',
+  step2_n:'02', step2_title:'Describe el movimiento', step2_desc:'Escribe cómo quieres que se mueva. Zoom, viento, cámara, partículas — tú controlas.',
+  step3_n:'03', step3_title:'Descarga tu video', step3_desc:'La IA genera tu video en segundos. HD, listo para publicar en cualquier plataforma.',
+  feat_label: 'Capacidades',
+  feat_title: 'Movimiento sin límites',
+  feat1_title:'Cualquier imagen', feat1_desc:'JPG, PNG, WebP. Fotos personales, arte digital, portadas de libros, diseños.',
+  feat2_title:'IA de vanguardia', feat2_desc:'Motor Kling AI — el más avanzado del mundo para transformar imágenes en video.',
+  feat3_title:'Calidad HD', feat3_desc:'Videos listos para Instagram, TikTok, YouTube, presentaciones y mucho más.',
+  feat4_title:'Descarga instantánea', feat4_desc:'Sin esperas interminables. Tu video listo en segundos, descargable para siempre.',
+  eco_label: 'Ecosistema',
+  eco_title: 'Parte de Joga Intelligence',
+  eco_sub: 'Joga Motion potencia todo el ecosistema creativo de Joga',
+  eco_int_title:'Plataforma central', eco_int_desc:'El hub de crecimiento personal. Anima tus metas y proyectos con video.',
+  eco_books_title:'Da vida a los libros', eco_books_desc:'Crea trailers y teasers para cada título de Joga Books con un solo clic.',
+  eco_audio_title:'Visuals + Audio', eco_audio_desc:'Combina tus audiolibros con video animado. Motion + sonido = impacto total.',
+  price_label:'Precios',
+  price_title:'Empieza gratis hoy',
+  price_free:'GRATIS', price_free_desc:'Para explorar sin límites',
+  pf1:'3 videos por mes', pf2:'Calidad estándar', pf3:'Marca de agua Joga',
+  price_free_cta:'EMPEZAR GRATIS',
+  price_popular:'MÁS POPULAR',
+  price_pro:'PRO', price_pro_desc:'Para creadores serios',
+  pp1:'Videos ilimitados', pp2:'Calidad HD sin marca de agua', pp3:'Prioridad de procesamiento', pp4:'Acceso a todos los estilos',
+  price_pro_cta:'EMPEZAR PRO',
+  price_main_cta:'CREAR MI PRIMER VIDEO — ES GRATIS',
+  footer_tagline:'Imágenes que cobran vida.',
+  footer_part:'Parte de',
+  nav_back:'Joga Intelligence', nav_books:'Joga Books', nav_create:'Crear Video',
+});
+Object.assign(STRINGS.en, {
+  hero_ecosystem: 'Joga Intelligence',
+  hero_h1_1: 'JOGA',
+  hero_h1_2: 'MOTION',
+  hero_sub: 'Upload any image. Describe the movement. Get a video that comes to life in seconds.',
+  hero_cta: 'CREATE MY VIDEO',
+  hero_scroll: 'See how it works',
+  showcase_label: 'Infinite possibilities',
+  sc_cosmos:'Cosmos · Cinematic', sc_nature:'Nature · Smooth', sc_books:'Covers · Zoom', sc_city:'City · Dynamic', sc_art:'Art · Dreamy',
+  how_label:'Process',
+  how_title:'Three steps.\nOne video.',
+  step1_n:'01', step1_title:'Upload your image', step1_desc:'Any photo, illustration or art. From your phone, camera, design or AI.',
+  step2_n:'02', step2_title:'Describe the motion', step2_desc:'Write how you want it to move. Zoom, wind, camera, particles — you control.',
+  step3_n:'03', step3_title:'Download your video', step3_desc:'AI generates your video in seconds. HD, ready to publish on any platform.',
+  feat_label:'Capabilities',
+  feat_title:'Motion without limits',
+  feat1_title:'Any image', feat1_desc:'JPG, PNG, WebP. Personal photos, digital art, book covers, designs.',
+  feat2_title:'Cutting-edge AI', feat2_desc:"Kling AI engine — the world's most advanced for turning images into video.",
+  feat3_title:'HD quality', feat3_desc:'Videos ready for Instagram, TikTok, YouTube, presentations and more.',
+  feat4_title:'Instant download', feat4_desc:'No long waits. Your video ready in seconds, downloadable forever.',
+  eco_label:'Ecosystem',
+  eco_title:'Part of Joga Intelligence',
+  eco_sub:'Joga Motion powers the entire Joga creative ecosystem',
+  eco_int_title:'Central platform', eco_int_desc:'The personal growth hub. Animate your goals and projects with video.',
+  eco_books_title:'Books come alive', eco_books_desc:'Create trailers and teasers for every Joga Books title with one click.',
+  eco_audio_title:'Visuals + Audio', eco_audio_desc:'Combine your audiobooks with animated video. Motion + sound = total impact.',
+  price_label:'Pricing',
+  price_title:'Start free today',
+  price_free:'FREE', price_free_desc:'Explore without limits',
+  pf1:'3 videos per month', pf2:'Standard quality', pf3:'Joga watermark',
+  price_free_cta:'START FREE',
+  price_popular:'MOST POPULAR',
+  price_pro:'PRO', price_pro_desc:'For serious creators',
+  pp1:'Unlimited videos', pp2:'HD quality no watermark', pp3:'Priority processing', pp4:'Access to all styles',
+  price_pro_cta:'START PRO',
+  price_main_cta:'CREATE MY FIRST VIDEO — IT\'S FREE',
+  footer_tagline:'Images that come to life.',
+  footer_part:'Part of',
+  nav_back:'Joga Intelligence', nav_books:'Joga Books', nav_create:'Create Video',
+});
+
+document.addEventListener('DOMContentLoaded', () => applyLang());
+</script>
+</body>
+</html>
