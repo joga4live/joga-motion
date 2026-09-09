@@ -9,7 +9,6 @@ var WORKER_URL = 'https://joga-motion-api.omhotien90.workers.dev';
 // ── State ──
 var state = {
   imageFile: null,
-  imageB64: null,
   selectedStyle: 'cinematic',
   selectedDuration: 5,
   intensity: 5,
@@ -57,13 +56,7 @@ function usePrompt(btn) {
   if (inp) inp.value = btn.textContent;
 }
 
-// Re-render quick prompts on lang change
-var _origOnLangChange = (typeof onLangChange === 'function') ? onLangChange : null;
-window.onLangChange = function() {
-  renderQuickPrompts();
-  applyLang();
-  if (_origOnLangChange) _origOnLangChange();
-};
+window.onLangChange = function() { renderQuickPrompts(); };
 
 function bindStyleBtns() {
   document.querySelectorAll('#styleGrid .s-btn').forEach(function(btn) {
@@ -97,11 +90,11 @@ function triggerUpload() { document.getElementById('fileInput').click(); }
 function handleFile(input) {
   var file = input.files[0];
   if (!file) return;
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { showToast(t('c_err_type')); return; }
   if (file.size > 10 * 1024 * 1024) { showToast(t('c_err_big')); return; }
   state.imageFile = file;
   var reader = new FileReader();
   reader.onload = function(e) {
-    state.imageB64 = e.target.result.split(',')[1]; // base64 only
     var img = document.getElementById('previewImg');
     img.src = e.target.result;
     img.style.display = 'block';
@@ -137,7 +130,7 @@ function onDrop(e) {
 
 // ── Generate ──
 function generateVideo() {
-  if (!state.imageB64) { showToast(t('c_err_no_img')); return; }
+  if (!state.imageFile) { showToast(t('c_err_no_img')); return; }
   var prompt = document.getElementById('promptInput').value.trim();
   if (!prompt) { showToast(t('c_err_no_prompt')); return; }
 
@@ -157,16 +150,12 @@ function generateVideo() {
 
   setStep(t('c_step_uploading'), 15);
 
-  fetch(WORKER_URL + '/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      image_b64: state.imageB64,
-      content_type: state.imageFile.type,
-      prompt: fullPrompt,
-      duration: state.selectedDuration,
-    }),
-  })
+  var fd = new FormData();
+  fd.append('image', state.imageFile);
+  fd.append('prompt', fullPrompt);
+  fd.append('duration', String(state.selectedDuration));
+
+  fetch(WORKER_URL + '/generate', { method: 'POST', body: fd })
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.task_id) {
@@ -203,7 +192,7 @@ function pollTask(taskId) {
     var pct = Math.min(55 + (attempts / maxAttempts) * 35, 90);
     setStep(t('c_step_animating'), pct);
 
-    fetch(WORKER_URL + '/status?task_id=' + taskId)
+    fetch(WORKER_URL + '/status?task_id=' + encodeURIComponent(taskId))
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.status === 'completed' && data.video_url) {
@@ -255,6 +244,8 @@ function downloadVideo() {
   if (!state.taskId) return;
   var a = document.createElement('a');
   a.href = WORKER_URL + '/download?task_id=' + encodeURIComponent(state.taskId);
+  a.target = '_blank';
+  a.rel = 'noopener';
   a.click();
 }
 
