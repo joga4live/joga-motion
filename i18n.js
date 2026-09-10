@@ -182,6 +182,7 @@ function toggleLang() {
   applyLang();
 }
 function applyLang() {
+  document.documentElement.lang = getLang();
   document.querySelectorAll('[data-t]').forEach(el => {
     const key = el.getAttribute('data-t');
     const attr = el.getAttribute('data-t-attr');
@@ -189,6 +190,9 @@ function applyLang() {
     else el.textContent = t(key);
   });
   const toggle = document.getElementById('lang-toggle');
-  if (toggle) toggle.textContent = getLang() === 'es' ? 'EN' : 'ES';
+  if (toggle) {
+    toggle.textContent = getLang() === 'es' ? 'English' : 'Español';
+    toggle.setAttribute('aria-label', getLang() === 'es' ? 'Cambiar a inglés' : 'Switch to Spanish');
+  }
   if (typeof onLangChange === 'function') onLangChange();
 }

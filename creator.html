@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Joga Motion — Creator</title>
+  <title data-t="c_page_title">Joga Motion — Creador</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
@@ -26,7 +26,7 @@
 <div class="page-creator">
   <div class="creator-hero">
     <div class="creator-hero-bg"></div>
-    <h1 class="creator-title">Joga <span>Motion</span> Creator</h1>
+    <h1 class="creator-title">Joga <span>Motion</span> <span class="creator-word" data-t="c_creator">Creador</span></h1>
     <p class="creator-sub" data-t="c_sub"></p>
   </div>
 
@@ -35,15 +35,15 @@
 
     <!-- LEFT: Upload -->
     <div class="upload-col">
-      <div class="upload-zone" id="uploadZone" onclick="triggerUpload()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
-        <div class="u-icon">↑</div>
-        <p class="u-hint" data-t="c_upload_hint"></p>
-        <p class="u-sub" data-t="c_upload_sub"></p>
-        <img class="u-preview" id="previewImg" style="display:none" alt="preview" />
-        <span class="u-badge" id="imgBadge" style="display:none" data-t="c_img_ready"></span>
-        <button class="u-change" id="changeBtn" style="display:none" data-t="c_change" onclick="event.stopPropagation(); triggerUpload()"></button>
-      </div>
-      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(this)" />
+      <button type="button" class="upload-zone" id="uploadZone" onclick="triggerUpload()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <span class="u-icon">＋</span>
+        <span class="u-hint" data-t="c_upload_hint"></span>
+        <span class="u-sub" data-t="c_upload_sub"></span>
+      </button>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none" onchange="handleFile(this)" />
+      <h2 data-t="c_scenes"></h2>
+      <p id="sceneSummary" class="scene-note" aria-live="polite"></p>
+      <div id="sceneList" class="scene-list"></div>
 
       <!-- Quick prompts -->
       <div style="display:flex;flex-direction:column;gap:8px">
@@ -54,11 +54,12 @@
 
     <!-- RIGHT: Controls -->
     <div class="ctrl-panel">
+      <h2 id="editorTitle"></h2>
 
       <!-- Prompt -->
       <div class="ctrl-box">
         <p class="ctrl-label" data-t="c_prompt_label"></p>
-        <textarea class="ctrl-textarea" id="promptInput" rows="4" data-t-attr="placeholder" data-t="c_prompt_ph"></textarea>
+        <textarea class="ctrl-textarea" id="promptInput" rows="4" maxlength="1800" data-t-attr="placeholder" data-t="c_prompt_ph"></textarea>
       </div>
 
       <!-- Motion Style -->
@@ -93,11 +94,18 @@
         </div>
       </div>
 
+      <p class="scene-note" data-t="c_scope"></p>
       <!-- Generate -->
       <button class="btn-gen" id="genBtn" onclick="generateVideo()">
         <span data-t="c_generate"></span>
       </button>
 
+    </div>
+
+    <div class="assembly-panel">
+      <h2 data-t="c_assembly"></h2>
+      <p class="scene-note" data-t="c_export_note"></p>
+      <button class="btn-gen" id="exportBtn" onclick="exportVideo()" disabled data-t="c_export"></button>
     </div>
 
     <!-- PROGRESS (full width) -->
@@ -114,7 +122,7 @@
       <p class="result-tag" data-t="c_result_tag"></p>
       <h3 class="result-title" data-t="c_result_title"></h3>
       <div class="result-video-wrap">
-        <video id="resultVideo" controls autoplay loop style="width:100%;display:block"></video>
+        <video id="resultVideo" controls playsinline style="width:100%;display:block"></video>
       </div>
       <div class="result-actions">
         <button class="btn-dl" id="dlBtn" onclick="downloadVideo()" data-t="c_download"></button>
@@ -126,14 +134,20 @@
 </div>
 
 <!-- Error toast -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="alert"></div>
 
 <script src="i18n.js"></script>
 <script src="creator.js"></script>
 <script>
 Object.assign(STRINGS.es, {
-  c_sub: 'Sube tu imagen, configura el movimiento y genera tu video.',
-  c_upload_hint: 'Arrastra o haz clic para subir',
+  c_page_title: 'Joga Motion — Creador', c_creator: 'Creador',
+  c_scenes: 'Secuencia de escenas',
+  c_scope: 'Cada escena genera un clip independiente y consume una generación. El estilo y la intensidad son indicaciones para la IA, no controles exactos. Editar una escena requiere generarla de nuevo. Mantén esta página abierta; el proyecto no se guarda al recargar.',
+  c_assembly: 'Montaje final',
+  c_export: 'UNIR Y EXPORTAR VIDEO',
+  c_export_note: 'Cortes directos entre clips reales, sin audio. Exportación local a 720p (WebM o MP4 según navegador), con barras para conservar cada encuadre. Tarda aproximadamente lo que dura el video: mantén esta pestaña visible. También puedes descargar cada clip original.',
+  c_sub: 'Crea una historia con varias imágenes. Ordena, anima y une tus escenas.',
+  c_upload_hint: 'Añadir imágenes',
   c_upload_sub: 'JPG, PNG, WebP · Máx 10 MB',
   c_img_ready: 'Imagen lista',
   c_change: 'Cambiar',
@@ -143,16 +157,16 @@ Object.assign(STRINGS.es, {
   c_style_label: 'Estilo de movimiento',
   s_cinematic:'Cinemático', s_smooth:'Suave', s_dynamic:'Dinámico',
   s_dreamy:'Onírico', s_zoom:'Zoom In', s_pan:'Panorámica',
-  c_dur_label: 'Duración del video',
+  c_dur_label: 'Duración de esta escena',
   c_dur_5: '5 segundos',
   c_dur_10: '10 segundos',
   c_intensity_label: 'Intensidad del movimiento',
   c_int_low: 'Suave', c_int_high: 'Intensa',
-  c_generate: 'GENERAR VIDEO',
+  c_generate: 'GENERAR / CONTINUAR ESCENAS',
   c_prog_label: 'Procesando',
   c_prog_title: 'La IA está animando tu imagen...',
   c_result_tag: 'Video generado',
-  c_result_title: 'Tu video está listo',
+  c_result_title: 'Vista previa',
   c_download: 'DESCARGAR VIDEO',
   c_new: 'CREAR OTRO',
   c_err_no_img: 'Por favor sube una imagen primero.',
@@ -167,8 +181,14 @@ Object.assign(STRINGS.es, {
   nav_back:'Joga Intelligence', nav_books:'Joga Books', nav_create:'Crear Video',
 });
 Object.assign(STRINGS.en, {
-  c_sub: 'Upload your image, configure the motion and generate your video.',
-  c_upload_hint: 'Drag or click to upload',
+  c_page_title: 'Joga Motion — Creator', c_creator: 'Creator',
+  c_scenes: 'Scene sequence',
+  c_scope: 'Each scene creates an independent clip and uses one generation. Style and intensity guide the AI; they are not exact controls. Editing a scene requires generating it again. Keep this page open; reloading does not save the project.',
+  c_assembly: 'Final edit',
+  c_export: 'JOIN AND EXPORT VIDEO',
+  c_export_note: 'Direct cuts between real clips, without audio. Local 720p export (WebM or MP4 depending on your browser), with bars to preserve framing. Takes roughly the video duration: keep this tab visible. You can also download each original clip.',
+  c_sub: 'Create a story with multiple images. Order, animate and join your scenes.',
+  c_upload_hint: 'Add images',
   c_upload_sub: 'JPG, PNG, WebP · Max 10 MB',
   c_img_ready: 'Image ready',
   c_change: 'Change',
@@ -178,16 +198,16 @@ Object.assign(STRINGS.en, {
   c_style_label: 'Motion style',
   s_cinematic:'Cinematic', s_smooth:'Smooth', s_dynamic:'Dynamic',
   s_dreamy:'Dreamy', s_zoom:'Zoom In', s_pan:'Pan',
-  c_dur_label: 'Video duration',
+  c_dur_label: 'Scene duration',
   c_dur_5: '5 seconds',
   c_dur_10: '10 seconds',
   c_intensity_label: 'Motion intensity',
   c_int_low: 'Subtle', c_int_high: 'Intense',
-  c_generate: 'GENERATE VIDEO',
+  c_generate: 'GENERATE / RESUME SCENES',
   c_prog_label: 'Processing',
   c_prog_title: 'AI is animating your image...',
   c_result_tag: 'Video generated',
-  c_result_title: 'Your video is ready',
+  c_result_title: 'Preview',
   c_download: 'DOWNLOAD VIDEO',
   c_new: 'CREATE ANOTHER',
   c_err_no_img: 'Please upload an image first.',

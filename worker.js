@@ -71,7 +71,9 @@ export default {
 
       const file = form.get('image');
       const prompt = String(form.get('prompt') || '').trim();
-      const duration = Number(form.get('duration')) === 10 ? 10 : 5;
+      const duration = Number(form.get('duration'));
+      if (![5, 10].includes(duration)) return json({ error: 'duration must be 5 or 10' }, 400);
+      if (prompt.length > 2500) return json({ error: 'prompt too long (max 2500 characters)' }, 400);
 
       if (!prompt) return json({ error: 'prompt required' }, 400);
       if (!(file instanceof File) || !IMAGE_TYPES.has(file.type)) return json({ error: 'image must be JPEG, PNG or WebP' }, 400);
@@ -97,7 +99,7 @@ export default {
       if (!TASK_ID.test(taskId)) return json({ error: 'task_id required' }, 400);
 
       const { ok, code, data } = await fetchStatus(taskId, authHeader);
-      if (!ok) return json({ status: 'failed', error: hfError(code, data) });
+      if (!ok) return json({ error: hfError(code, data) }, 502);
 
       if (data.status === 'completed') {
         const videoUrl = data.video?.url;
