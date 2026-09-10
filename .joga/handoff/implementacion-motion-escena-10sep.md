@@ -1,55 +1,89 @@
-# Implementación — ronda motion-escena-10sep
+# Implementación — ronda motion-escena-10sep, segunda vuelta
 
-Base: `c55b94e`. Plan seguido: `.joga/handoff/plan-motion-escena-10sep.md` (secciones A–I).
+Commit: `692a8a8` sobre `7a0e97a` (base `c55b94e`). Corrige los dos defectos de `revision-motion-escena-10sep.md` (J, K) y añade L. Solo se tocaron `studio.js`, `creator.html`, `studio.css` — confirmado con `git diff --stat`.
 
-## Archivos cambiados
+## J — guardián de cargo en «Otra escena» (crítico)
 
-### `worker.js` (solo ruta `/compose`, secciones A–C)
-- **A.** `if (photos.length !== 1) return json({ error: 'one reference photo required' }, 400);` — reemplaza el rango 1–8.
-- **B.** Se borró el bucle `inputImages` y la llamada a `/nano-banana`; ahora sube la única foto con `uploadImage(photos[0], authHeader)` y llama a `POST /higgsfield-ai/soul/reference` con `image_reference_url`, `aspect_ratio`, `resolution:'720p'`, `batch_size:1`, tal como especifica el plan (código copiado literal).
-- **C.** Comentario de cabecera de la ruta actualizado a una línea («One reference photo -> one new scene...»). Nada más tocado: `/generate`, `/status`, `/download`, `/compose-status`, `/compose-image` intactos (ya leían `data.images?.[0]?.url` y los estados terminales, confirmado por lectura directa, no hizo falta cambiarlos).
+`studio.js`, handler de `#again` (última línea del archivo):
+```js
+$('again').onclick=()=>{if(studio.uncertain&&!window.confirm(t('uncertain')))return;resetGeneration();createScene();};
+```
+Ahora el guardián se evalúa **antes** de `resetGeneration()`, igual que en el botón principal y en `animate()`. Aplicado tal cual lo trae el plan.
 
-### `studio.js`
-- **Estado (D):** `studio.mode='motion'`, más `imageTask`, `imageReady`, `imageUrl`, `sceneBlob`. `resetGeneration()` ahora también revoca el `imageUrl` (object URL), limpia esos cuatro campos y quita el `src` de `#scene`.
-- **Modo (E):** contenedor `#modes` se puebla en `render()` con dos botones (`modeMotion`/`modeScene`) que fijan `studio.mode`, llaman `resetGeneration()` y re-renderizan. Botón activo recibe clase `on`. `referenceHint` y `cost` se recalculan cada render mutando `TEXT[language]` con `hintMotion/hintScene` y `costMotion/costScene` antes del bucle genérico de `data-copy` (no se tocó el HTML de esos dos elementos, siguen usando `data-copy="referenceHint"`/`"cost"` sin cambios). `placeholder` del textarea usa `placeholderScene` en modo escena. Ejemplos (`#examples`) cambian de array según el modo, con los tres ejemplos de escena del plan (traducción EN propia, no estaba en el plan literal). Botón `create` y visibilidad/disable de `#again` implementados como en E.
-- **Flujo (F):** `createVideo()` se dividió en `createScene()` (POST `/compose` con `images`, `prompt`, `aspect_ratio='16:9'` → sondeo `/compose-status` → `GET /compose-image` → valida tipo/tamaño del blob → `sceneBlob`/`imageUrl`/`imageReady`/`message='sceneReady'`) y `animate()` (FormData `image` = blob de escena empaquetado en `File` si modo escena, si no la foto; `/generate` → `/status` → video, igual que antes). Catch de cada función es el mismo de cinco ramas aprobado en `c18d0ab`, con la única variable que cambia entre ellas: `imageTask`/`imageReady` en `createScene()`, `videoTask` en `animate()` — exactamente lo que pide el plan.
-- **Textos (G):** las 12 llaves pedidas están en `TEXT.es` y `TEXT.en`, sin huecos (paridad verificada por script, 47/47 llaves en ambos idiomas).
+**Verificado con comandos:** `node --check studio.js` limpio; lectura del diff confirma que la única diferencia en esa línea es la condición añadida al principio del arrow function, sin tocar el resto del archivo.
 
-### `creator.html`
-- `<div id="modes" class="examples"></div>` insertado justo encima del bloque de descripción (después del `<p class="hint">`, antes del `<label>` de la sección 02).
-- `<img id="scene" hidden alt="">` agregado junto al `<video>` dentro de `.preview-screen`.
-- `<button id="again" type="button" hidden data-copy="otherScene"></button>` agregado junto a `#download`.
-- Nada más tocado en el diseño.
+**Pendiente de medición** (requiere navegador, no lo hago yo): repetir la tabla de Nico — provocar `uncertain=true` (cortar red al pulsar «Animar esta escena»), luego pulsar «Otra escena» y confirmar que aparece el `window.confirm` con el texto de `uncertain`, que cancelar no dispara `/compose`, y que `studio.uncertain` sigue en `true` tras cancelar. Resultado esperado: mismo comportamiento que el botón principal (1 confirmación, 0 llamadas de red si se cancela).
 
-### `studio.css` (solo I)
-- `.preview video{...}` se convirtió en selector combinado `.preview video,#scene{...}` — mismas cuatro propiedades exactas, sin valores nuevos.
-- `#modes button.on{border-color:var(--accent);background:#f0eafb;color:var(--accent)}` — reutiliza los dos colores que ya usa `.upload:hover,.upload.drag` para el estado "activo"; ningún color ni tamaño nuevo.
-- Los `@media` de `bb683e9` no se tocaron. Los botones de `#modes` heredan `.examples button{...;min-height:44px;...}` del `@media(max-width:480px)` ya existente, sin CSS nuevo para eso.
+## K — estilo de `#again`
 
-### `tests/composer-worker.mjs`
-- Mock adaptado al contrato `soul/reference`: intercepta `/higgsfield-ai/soul/reference` en vez de `/nano-banana`, valida `image_reference_url`, `prompt`, `aspect_ratio`, `resolution`, `batch_size`. Casos: 0 fotos → 400, 2 fotos → 400, 1 foto → 200 con `task_id`. El resto del archivo (compose-status, compose-image, outage, path traversal) se conservó igual, solo se agregó el caso de 2 fotos.
+`creator.html`: el botón pasó de sin clase a `class="primary"`, la misma que `#download`:
+```html
+<button id="again" type="button" class="primary" hidden data-copy="otherScene"></button>
+```
+`studio.css`: añadida la única regla que pide el plan, por si el navegador insiste en su `appearance` nativo de `<button>`:
+```css
+#again{appearance:none;font:inherit;cursor:pointer}
+```
+Nada más se tocó en `studio.css` (verificado: el diff son 2 inserciones en la línea 1, ninguna regla existente se modificó).
 
-## Desviación del plan (anotada, no corregida por mi cuenta)
+**Verificado con comandos:** `node --check` no aplica a CSS; confirmé por lectura que `.primary` ya define `border:0`, `border-radius:10px`, `background:var(--accent)`, `color:#fff`, `font-size:13px`, `font-weight:600`, y que en `@media(max-width:480px)` hereda `.primary{min-height:44px;width:100%}` igual que `#download`.
 
-El plan no especifica qué hace `animate()` con `studio.videoUrl` preexistente al pulsar "Crear otra versión" en modo escena. Si `animate()` llamara a `resetGeneration()` completo (como hacía la vieja `createVideo()` con `if(studio.videoUrl)resetGeneration()`), se borraría también `imageReady`/`imageUrl`/`sceneBlob` — perdiendo la escena que el usuario ya pagó y quiere volver a animar. Implementé en su lugar un limpiado en línea dentro de `animate()` que solo resetea `videoTask`/`videoUrl`/`uncertain` y el `<video>`/`#download`, sin tocar el estado de la escena. `resetGeneration()` (la función completa, con el borrado de escena) queda reservada para cambios de modo, foto, descripción y el botón "Otra escena", tal como pide D y el punto 6 de verificación. Lo marco aquí para que Nico lo revise con ojo crítico: es la única parte donde el código no reutiliza literalmente una función existente sino que reimplementa un subconjunto de su lógica.
+**Pendiente de medición** (navegador): estilos computados de `#again` vs `#download` en el estado donde ambos son visibles (escena lista, video generado con error o video listo no aplica porque `#again` se oculta con video — el estado real para compararlos es cuando `#again` está visible y `#download` no, así que la comparación correcta es contra los valores fijos de la clase `.primary`, no lado a lado). Esperado: alto ≥44px, `border-radius:10px`, `font-size:13px`, fondo `#6941cf`/`color:#fff`, sin borde `outset` ni fondo gris de sistema — a 320/375/430/1440px.
 
-## Verificación
+## L — «Continuar escena»
 
-- `node --check worker.js studio.js` → sin errores de sintaxis.
-- `node tests/worker.mjs` → PASS.
-- `node tests/composer-worker.mjs` (adaptado) → PASS: 1 foto → 200, 2 fotos → 400, 0 fotos → 400, compose-status/compose-image, outage, path traversal.
-- Paridad de llaves i18n ES/EN: 47/47, sin huecos (script ad hoc, no queda en el repo).
-- Balance de llaves `{}` en `studio.css`: 117/117.
-- Todos los `id` que `studio.js` referencia con `$()` existen en `creator.html` (`modes`, `scene`, `again`, más los quince ya existentes) — verificado con `grep`.
-- `git diff --stat` confirma que solo se tocaron los cinco archivos permitidos.
+`studio.js`:
+- Clave `resumeScene` añadida a `TEXT.es` («Continuar escena») y `TEXT.en` («Continue scene»).
+- `render()`, línea del texto de `#create`: en modo `scene`, sin `imageReady`, si no está en `failed`, ahora distingue `imageTask` presente (`resumeScene`) de ausente (`createScene`):
+```js
+studio.mode==='scene'?(studio.imageReady?'animateScene':(studio.message==='failed'?'retry':(studio.imageTask?'resumeScene':'createScene'))):...
+```
+- El clic de `#create` no cambió: ya llamaba a `createScene()` en este estado, y `createScene()` ya reanuda sin reenviar porque comprueba `if(!studio.imageTask)` antes de hacer `POST /compose`.
+- Texto `waiting` (ES y EN) generalizado: ya no nombra «Continuar video», dice «Pulsa Continuar…» / «Press Continue…», válido para el flujo de imagen y el de video.
 
-## Pendiente de medición (no lo puedo comprobar yo — Tavo no levanta servidores ni navegadores)
+**Verificado con comandos:**
+- `node -e` con `eval` sobre el objeto `TEXT` extraído del archivo: 48 llaves en `es`, 48 en `en`, cero solo-en-un-idioma, cero valores vacíos (incluye `resumeScene`).
+- `node --check studio.js` limpio.
+- `node tests/worker.mjs` y `node tests/composer-worker.mjs`: PASS (no dependen del texto de UI, pero confirman que el contrato `/compose` y `/generate` sigue intacto).
 
-1. **Diseño / punto 2 del plan**: que las 18 cajas de `c55b94e` sigan iguales salvo `#modes` y `#scene`; que a 320/375/430px no haya desborde; que los botones de `#modes` midan ≥44px de alto en móvil. Mi expectativa: deberían cumplirse, porque `#modes` reutiliza literalmente la clase `.examples` (mismo padding, mismo `min-height:44px` en el `@media(max-width:480px)` ya aprobado) y no agregué ningún ancho ni margen nuevo. Pero esto se mide viendo la pantalla, no leyendo el CSS.
-2. **Punto 3**: que el modo "Animar mi foto" sea comportamiento idéntico a hoy. Por código, `animate()` en modo motion es funcionalmente igual a la vieja `createVideo()` (mismo orden de FormData, misma validación, mismo catch) — pero solo un run real en navegador confirma que no hay una diferencia de timing o de estado inicial que se me haya escapado.
-3. **Punto 4**: el flujo completo con Worker simulado (compose → compose-status → compose-image → aparece la imagen → "Animar esta escena" → un solo `/generate`; "Otra escena" → nuevo `/compose` sin `/generate`). Lo verifiqué a nivel de lógica de código y con el mock de Node en `composer-worker.mjs` (que cubre el Worker, no el cliente `studio.js`). El flujo del lado del navegador (clicks reales, estados de `render()`, que `#scene` efectivamente se vea) no lo corrí — no hay equivalente de `tests/studio.cjs` actualizado para este modo nuevo, y `tests/studio.cjs` (Playwright) quedó desactualizado desde antes de esta ronda (prueba el flujo viejo de 8 fotos) y no estaba en mi lista de archivos permitidos ni en el "Cómo se comprueba" del plan, así que no lo toqué.
-4. **Punto 6**: que cambiar de modo, foto o descripción limpie escena y video. Por código sí ocurre (todos esos handlers llaman `resetGeneration()`, que ahora limpia ambos) — pendiente de confirmar visualmente que `#scene` y `#video` en verdad desaparecen de pantalla.
-5. **Punto 7 (producción)**: no aplica a esta ronda — no hice push ni pegué el Worker en Cloudflare, no hubo llamadas reales a Higgsfield ni gasto.
+**Pendiente de medición** (navegador): provocar 12 fallos de sondeo en `/compose-status` con `imageTask` vivo y sin `imageReady`; confirmar que el botón principal muestra «Continuar escena», que pulsarlo hace **0** `POST /compose` nuevos y reanuda el sondeo (`/compose-status` + `/compose-image`), y que el mensaje en pantalla ya no menciona «Continuar video».
 
-## No tocado
-`index.html`, `style.css`, `i18n.js`, portada — sin cambios, como exige la instrucción. `tests/studio.cjs` no se tocó (fuera de alcance, ya desactualizado desde antes). Archivos de otra sesión (`.joga/handoff/investigacion-falai-10sep.md`, `plan-motion-escena-10sep.md`, `sonda-modelos-worker-v2.js`) no se agregaron al commit.
+## Verificación general
+
+- `node --check studio.js` y `node --check worker.js`: OK (worker.js no se tocó esta vuelta, se revisó igual por costumbre del gate de publicación).
+- `node tests/worker.mjs`: PASS.
+- `node tests/composer-worker.mjs`: PASS.
+- `git diff --stat -- studio.js creator.html studio.css`: 3 archivos, 6 inserciones / 6 borrados — coincide con J, K, L y nada más.
+- No hay `gate.js` ni service worker en este repo (confirmado por Nico en su auditoría anterior); no aplican las reglas 1 y 2 de oro.
+- i18n: paridad exacta 48/48, incluida la clave nueva `resumeScene`.
+- Branding: sin cambios de color, logo ni layout — el único CSS nuevo es una regla de reseteo de `appearance` para un botón que ya existía.
+
+## Pendiente para Nico
+
+1. Medir J: confirmar diálogo antes del reset en `#again` con `uncertain=true`, en un estado real (interrumpir red durante «Animar esta escena»).
+2. Medir K: estilos computados de `#again` (alto, radio, fuente, colores) a 320/375/430/1440px, comparados contra los valores fijos de `.primary`/`#download`.
+3. Medir L: estado de 12 fallos de sondeo en fase imagen — texto del botón «Continuar escena», 0 `/compose` al reanudar, mensaje `waiting` genérico.
+4. No repetí lo que Nico ya midió y no toqué (flujo completo de escena, errores, contraste de `#modes button.on`, geometría de `#scene`, invalidación al cambiar modo/foto/descripción): sigue igual, sin cambios de código ahí.
+
+No hice commit de los archivos untracked de la otra sesión (`investigacion-falai-10sep.md`, `plan-motion-escena-10sep.md`, `sonda-fal-worker.js`, `sonda-modelos-worker-v2.js`, `revision-motion-escena-10sep.md`) — solo `studio.js`, `creator.html`, `studio.css`. Sin push.
+
+## Tercera vuelta — commit `12bd4f0`
+
+Nico encontró un solo defecto en `692a8a8` (sección "3. K — estilo de `#again`: FALLA" de `revision-motion-escena-10sep.md`): la regla de K, `#again{appearance:none;font:inherit;cursor:pointer}`, va en un selector de ID (especificidad 1,0,0) y `font:inherit` es taquigrafía de `font-size`+`font-weight`. Eso gana sobre `.primary` (0,1,0) y cancela `font-size:13px;font-weight:600`, dejando `#again` en 47,5px/16px/400 en vez de 44px/13px/600 como `#download`. Nico midió esto con `getComputedStyle`; yo no lo medí, solo apliqué la corrección que el propio Nico dejó prescrita en su reporte.
+
+**Cambio único**, en `studio.css`, esa misma línea:
+```css
+#again{appearance:none}
+```
+Se quitan `font:inherit` y `cursor:pointer`: ambos ya los da la base de la misma hoja con especificidad baja (`button,textarea,input{font:inherit}` y `button{cursor:pointer}`, ambos en la línea 1), que es justo lo que permitía a `.primary` mandar antes de que la regla de ID los bloqueara. Solo `appearance:none` aporta algo nuevo (reseteo para Safari/iOS), y se conserva.
+
+**Verificado con comandos:**
+- `git diff --stat` antes de commitear: 1 archivo (`studio.css`), 1 inserción / 1 borrado — nada más tocado.
+- `node -e` verificando balance de llaves `{}` en `studio.css`: 118/118 (subió de 117 a 118 al añadir la regla en la vuelta anterior; no cambió en esta).
+- `node -e` con regex confirma que el archivo contiene exactamente `#again{appearance:none}` y ya no `font:inherit` ni `cursor:pointer` en esa regla.
+- `git diff --stat -- creator.html studio.js worker.js i18n.js`: vacío, ningún otro archivo tocado.
+- Commit `12bd4f0`, un solo archivo (`studio.css`, 1 insertion/1 deletion), mensaje bilingüe. Sin push.
+- No existe `init.sh` en este repo (`find . -iname init.sh` vacío) — no aplica el paso de `bash init.sh` que pide mi rol por defecto; lo señalo en vez de omitirlo en silencio.
+- No hay `gate.js` ni service worker en este repo (confirmado por Nico en su auditoría anterior) — no aplican las reglas 1 y 2 de oro. i18n y branding no se tocaron.
+
+**Pendiente de medición** (navegador, no lo hago yo): repetir exactamente la tabla de Nico — `getComputedStyle(#again)` vs los valores fijos de `.primary`/`#download` en 320/375/430/1440px. Esperado tras el cambio: `#again` en 44px de alto (móvil) / mismo alto que `#download` en desktop, `font-size:13px`, `font-weight:600`, igual que antes de que `font:inherit` lo rompiera — coincidiendo con la fila "sin `font:inherit`" que el propio Nico midió y dejó documentada (44,0px · 13px/600, idéntico a `#download`). También confirmar `overflowX=0` en los cuatro anchos, como ya medía Nico.
