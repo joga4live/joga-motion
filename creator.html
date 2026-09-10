@@ -1,260 +1,44 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title data-t="c_page_title">Joga Motion — Creador</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Joga Motion — Crea tu video</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="studio.css">
+  <script src="studio.js" defer></script>
 </head>
 <body>
-
-<!-- NAV -->
-<nav class="nav">
-  <a href="index.html" class="nav-logo">
-    <div class="pip"></div>
-    <span class="joga">Joga</span><span class="motion">Motion</span>
-  </a>
-  <div class="nav-right">
-    <button id="lang-toggle" onclick="toggleLang()">EN</button>
-  </div>
-</nav>
-
-<!-- CREATOR HERO -->
-<div class="page-creator">
-  <div class="creator-hero">
-    <div class="creator-hero-bg"></div>
-    <h1 class="creator-title">Joga <span>Motion</span> <span class="creator-word" data-t="c_creator">Creador</span></h1>
-    <p class="creator-sub" data-t="c_sub"></p>
-  </div>
-
-  <!-- LAYOUT -->
-  <div class="creator-body">
-
-    <section class="compose-panel" aria-labelledby="composeTitle">
-      <div class="compose-heading">
-        <span class="compose-badge" data-t="co_badge"></span>
-        <h2 id="composeTitle" data-t="co_title"></h2>
-        <p class="scene-note" data-t="co_intro"></p>
-      </div>
-      <div class="compose-grid">
-        <div class="compose-inputs">
-          <div class="compose-photos">
-            <label class="compose-photo"><span data-t="co_person1"></span><img id="refPreview0" hidden alt="" /><input id="refInput0" type="file" accept="image/jpeg,image/png,image/webp" /><small data-t="co_formats"></small></label>
-            <label class="compose-photo"><span data-t="co_person2"></span><img id="refPreview1" hidden alt="" /><input id="refInput1" type="file" accept="image/jpeg,image/png,image/webp" /><small data-t="co_formats"></small></label>
-          </div>
-          <label class="ctrl-label" for="composePrompt" data-t="co_prompt"></label>
-          <textarea id="composePrompt" class="ctrl-textarea" maxlength="1800" rows="4" data-t="co_placeholder" data-t-attr="placeholder"></textarea>
-          <div class="compose-examples" id="composeExamples"></div>
-          <label class="ctrl-label" for="composeAspect" data-t="co_format"></label>
-          <select id="composeAspect"><option value="16:9" data-t="co_landscape"></option><option value="9:16" data-t="co_portrait"></option><option value="1:1" data-t="co_square"></option></select>
-          <p class="scene-note" data-t="co_note"></p>
-          <button type="button" id="composeBtn" class="btn-gen"></button>
-          <p id="composeStatus" class="scene-note" role="status" aria-live="polite"></p>
+  <header class="nav"><a class="brand" href="index.html"><span class="brand-icon" aria-hidden="true">▶</span>Joga <strong>Motion</strong></a><button id="language" type="button">English</button></header>
+  <main>
+    <header class="intro"><span class="eyebrow" data-copy="eyebrow"></span><h1 data-copy="title"></h1><p data-copy="subtitle"></p></header>
+    <div class="studio">
+      <section class="editor" aria-labelledby="photosTitle">
+        <div class="section-title"><h2 id="photosTitle"><span>01</span> <span data-copy="photos"></span></h2><span id="photoCount">0 / 8</span></div>
+        <button type="button" id="upload" class="upload"><span class="upload-icon" aria-hidden="true">＋</span><strong data-copy="upload"></strong><span data-copy="formats"></span></button>
+        <input type="file" id="photos" accept="image/jpeg,image/png,image/webp" multiple hidden>
+        <div id="thumbnails" class="thumbnails"></div>
+        <p class="hint" data-copy="referenceHint"></p>
+        <label class="section-title prompt-title" for="description"><span class="label"><span>02</span> <span data-copy="description"></span></span></label>
+        <textarea id="description" maxlength="1800" rows="5"></textarea>
+        <div class="examples" id="examples"></div>
+        <div class="create-row"><span class="video-spec" data-copy="spec"></span><button id="create" type="button" class="primary" disabled></button></div>
+        <p class="cost-note" data-copy="cost"></p>
+        <p id="message" class="message" role="status" aria-live="polite"></p>
+      </section>
+      <section class="preview" aria-labelledby="previewTitle">
+        <div class="section-title"><h2 id="previewTitle" data-copy="preview"></h2><span class="preview-tag" data-copy="previewTag"></span></div>
+        <div class="preview-screen">
+          <div id="emptyPreview" class="empty-preview"><div class="film-icon" aria-hidden="true">▷</div><h3 data-copy="emptyTitle"></h3><p data-copy="emptyText"></p></div>
+          <div id="progress" class="progress" hidden><span class="spinner" aria-hidden="true"></span><h3 id="progressTitle"></h3><p data-copy="progressNote"></p></div>
+          <video id="video" controls playsinline hidden></video>
         </div>
-        <div class="compose-review">
-          <p class="ctrl-label" data-t="co_review"></p>
-          <p id="composeEmpty" class="scene-note" data-t="co_empty"></p>
-          <img id="composePreview" hidden data-t="co_preview_alt" data-t-attr="alt" />
-          <p class="scene-note" data-t="co_next"></p>
-          <button type="button" class="btn-gen" id="useComposition" disabled data-t="co_use"></button>
-        </div>
-      </div>
-    </section>
-
-    <!-- LEFT: Upload -->
-    <div class="upload-col">
-      <button type="button" class="upload-zone" id="uploadZone" onclick="triggerUpload()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
-        <span class="u-icon">＋</span>
-        <span class="u-hint" data-t="c_upload_hint"></span>
-        <span class="u-sub" data-t="c_upload_sub"></span>
-      </button>
-      <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none" onchange="handleFile(this)" />
-      <h2 data-t="c_scenes"></h2>
-      <p id="sceneSummary" class="scene-note" aria-live="polite"></p>
-      <div id="sceneList" class="scene-list"></div>
-
-      <!-- Quick prompts -->
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <p style="font-size:.66rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3)" data-t="c_quick_label"></p>
-        <div style="display:flex;flex-wrap:wrap;gap:8px" id="quickPrompts"></div>
-      </div>
+        <div class="preview-footer"><p data-copy="previewHint"></p><a id="download" class="primary" hidden data-copy="download"></a></div>
+      </section>
     </div>
-
-    <!-- RIGHT: Controls -->
-    <div class="ctrl-panel">
-      <h2 id="editorTitle"></h2>
-
-      <!-- Prompt -->
-      <div class="ctrl-box">
-        <p class="ctrl-label" data-t="c_prompt_label"></p>
-        <textarea class="ctrl-textarea" id="promptInput" rows="4" maxlength="1800" data-t-attr="placeholder" data-t="c_prompt_ph"></textarea>
-      </div>
-
-      <!-- Motion Style -->
-      <div class="ctrl-box">
-        <p class="ctrl-label" data-t="c_style_label"></p>
-        <div class="style-grid" id="styleGrid">
-          <button class="s-btn on" data-style="cinematic" data-t="s_cinematic"></button>
-          <button class="s-btn" data-style="smooth" data-t="s_smooth"></button>
-          <button class="s-btn" data-style="dynamic" data-t="s_dynamic"></button>
-          <button class="s-btn" data-style="dreamy" data-t="s_dreamy"></button>
-          <button class="s-btn" data-style="zoom" data-t="s_zoom"></button>
-          <button class="s-btn" data-style="pan" data-t="s_pan"></button>
-        </div>
-      </div>
-
-      <!-- Duration -->
-      <div class="ctrl-box">
-        <p class="ctrl-label" data-t="c_dur_label"></p>
-        <div class="dur-row">
-          <button class="d-btn on" data-dur="5" data-t="c_dur_5"></button>
-          <button class="d-btn" data-dur="10" data-t="c_dur_10"></button>
-        </div>
-      </div>
-
-      <!-- Intensity -->
-      <div class="ctrl-box">
-        <p class="ctrl-label" data-t="c_intensity_label"></p>
-        <div class="slider-wrap">
-          <span class="sl-label" data-t="c_int_low"></span>
-          <input type="range" class="intensity" id="intensitySlider" min="1" max="10" value="5" oninput="updateSlider(this)" />
-          <span class="sl-label" style="text-align:right" data-t="c_int_high"></span>
-        </div>
-      </div>
-
-      <p class="scene-note" data-t="c_scope"></p>
-      <!-- Generate -->
-      <button class="btn-gen" id="genBtn" onclick="generateVideo()">
-        <span data-t="c_generate"></span>
-      </button>
-
-    </div>
-
-    <div class="assembly-panel">
-      <h2 data-t="c_assembly"></h2>
-      <p class="scene-note" data-t="c_export_note"></p>
-      <button class="btn-gen" id="exportBtn" onclick="exportVideo()" disabled data-t="c_export"></button>
-    </div>
-
-    <!-- PROGRESS (full width) -->
-    <div class="prog-panel" id="progPanel">
-      <div class="prog-spinner"></div>
-      <p class="prog-label" data-t="c_prog_label"></p>
-      <h3 class="prog-title" data-t="c_prog_title"></h3>
-      <div class="prog-bar-bg"><div class="prog-bar" id="progBar"></div></div>
-      <p class="prog-step" id="progStep"></p>
-    </div>
-
-    <!-- RESULT (full width) -->
-    <div class="result-panel" id="resultPanel" style="position:relative">
-      <p class="result-tag" data-t="c_result_tag"></p>
-      <h3 class="result-title" data-t="c_result_title"></h3>
-      <div class="result-video-wrap">
-        <video id="resultVideo" controls playsinline style="width:100%;display:block"></video>
-      </div>
-      <div class="result-actions">
-        <button class="btn-dl" id="dlBtn" onclick="downloadVideo()" data-t="c_download"></button>
-        <button class="btn-again" onclick="resetCreator()" data-t="c_new"></button>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- Error toast -->
-<div class="toast" id="toast" role="alert"></div>
-
-<script src="i18n.js"></script>
-<script src="creator.js"></script>
-<script>
-Object.assign(STRINGS.es, {
-  c_page_title: 'Joga Motion — Creador', c_creator: 'Creador',
-  c_scenes: 'Secuencia de escenas',
-  c_scope: 'Cada escena genera un clip independiente y consume una generación. El estilo y la intensidad son indicaciones para la IA, no controles exactos. Editar una escena requiere generarla de nuevo. Mantén esta página abierta; el proyecto no se guarda al recargar.',
-  c_assembly: 'Montaje final',
-  c_export: 'UNIR Y EXPORTAR VIDEO',
-  c_export_note: 'Cortes directos entre clips reales, sin audio. Exportación local a 720p (WebM o MP4 según navegador), con barras para conservar cada encuadre. Tarda aproximadamente lo que dura el video: mantén esta pestaña visible. También puedes descargar cada clip original.',
-  c_sub: 'Crea una historia con varias imágenes. Ordena, anima y une tus escenas.',
-  c_upload_hint: 'Añadir imágenes',
-  c_upload_sub: 'JPG, PNG, WebP · Máx 10 MB',
-  c_img_ready: 'Imagen lista',
-  c_change: 'Cambiar',
-  c_quick_label: 'Prompts rápidos',
-  c_prompt_label: 'Describe el movimiento',
-  c_prompt_ph: 'Ej: La cámara hace un lento zoom hacia el horizonte mientras el viento mueve los árboles...',
-  c_style_label: 'Estilo de movimiento',
-  s_cinematic:'Cinemático', s_smooth:'Suave', s_dynamic:'Dinámico',
-  s_dreamy:'Onírico', s_zoom:'Zoom In', s_pan:'Panorámica',
-  c_dur_label: 'Duración de esta escena',
-  c_dur_5: '5 segundos',
-  c_dur_10: '10 segundos',
-  c_intensity_label: 'Intensidad del movimiento',
-  c_int_low: 'Suave', c_int_high: 'Intensa',
-  c_generate: 'GENERAR / CONTINUAR ESCENAS',
-  c_prog_label: 'Procesando',
-  c_prog_title: 'La IA está animando tu imagen...',
-  c_result_tag: 'Video generado',
-  c_result_title: 'Vista previa',
-  c_download: 'DESCARGAR VIDEO',
-  c_new: 'CREAR OTRO',
-  c_err_no_img: 'Por favor sube una imagen primero.',
-  c_err_no_prompt: 'Describe cómo quieres que se mueva tu imagen.',
-  c_err_api: 'Error al generar el video. Intenta de nuevo.',
-  c_err_big: 'La imagen es muy pesada (máx 10 MB).',
-  c_err_type: 'Formato no válido. Usa JPG, PNG o WebP.',
-  c_step_uploading: 'Subiendo imagen...',
-  c_step_queued: 'En cola de procesamiento...',
-  c_step_animating: 'Animando tu imagen con IA...',
-  c_step_finalizing: 'Finalizando y optimizando...',
-  nav_back:'Joga Intelligence', nav_books:'Joga Books', nav_create:'Crear Video',
-});
-Object.assign(STRINGS.en, {
-  c_page_title: 'Joga Motion — Creator', c_creator: 'Creator',
-  c_scenes: 'Scene sequence',
-  c_scope: 'Each scene creates an independent clip and uses one generation. Style and intensity guide the AI; they are not exact controls. Editing a scene requires generating it again. Keep this page open; reloading does not save the project.',
-  c_assembly: 'Final edit',
-  c_export: 'JOIN AND EXPORT VIDEO',
-  c_export_note: 'Direct cuts between real clips, without audio. Local 720p export (WebM or MP4 depending on your browser), with bars to preserve framing. Takes roughly the video duration: keep this tab visible. You can also download each original clip.',
-  c_sub: 'Create a story with multiple images. Order, animate and join your scenes.',
-  c_upload_hint: 'Add images',
-  c_upload_sub: 'JPG, PNG, WebP · Max 10 MB',
-  c_img_ready: 'Image ready',
-  c_change: 'Change',
-  c_quick_label: 'Quick prompts',
-  c_prompt_label: 'Describe the motion',
-  c_prompt_ph: 'E.g.: The camera does a slow zoom toward the horizon as wind moves the trees...',
-  c_style_label: 'Motion style',
-  s_cinematic:'Cinematic', s_smooth:'Smooth', s_dynamic:'Dynamic',
-  s_dreamy:'Dreamy', s_zoom:'Zoom In', s_pan:'Pan',
-  c_dur_label: 'Scene duration',
-  c_dur_5: '5 seconds',
-  c_dur_10: '10 seconds',
-  c_intensity_label: 'Motion intensity',
-  c_int_low: 'Subtle', c_int_high: 'Intense',
-  c_generate: 'GENERATE / RESUME SCENES',
-  c_prog_label: 'Processing',
-  c_prog_title: 'AI is animating your image...',
-  c_result_tag: 'Video generated',
-  c_result_title: 'Preview',
-  c_download: 'DOWNLOAD VIDEO',
-  c_new: 'CREATE ANOTHER',
-  c_err_no_img: 'Please upload an image first.',
-  c_err_no_prompt: 'Describe how you want your image to move.',
-  c_err_api: 'Error generating video. Please try again.',
-  c_err_big: 'Image too large (max 10 MB).',
-  c_err_type: 'Invalid format. Use JPG, PNG or WebP.',
-  c_step_uploading: 'Uploading image...',
-  c_step_queued: 'In processing queue...',
-  c_step_animating: 'Animating your image with AI...',
-  c_step_finalizing: 'Finalizing and optimizing...',
-  nav_back:'Joga Intelligence', nav_books:'Joga Books', nav_create:'Create Video',
-});
-
-document.addEventListener('DOMContentLoaded', () => { applyLang(); initCreator(); });
-</script>
-<script src="composer.js"></script>
+    <p class="footer-note" data-copy="footer"></p>
+  </main>
 </body>
 </html>

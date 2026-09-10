@@ -15,6 +15,8 @@ function form(n=2){let f=new FormData();for(let i=0;i<n;i++)f.append('images',ne
 try{
  let r=await worker.fetch(new Request('https://worker/compose',{method:'POST',body:form(0)}),env);assert.equal(r.status,400);assert.equal(calls.length,0);
  r=await worker.fetch(new Request('https://worker/compose',{method:'POST',body:form()}),env);assert.equal((await r.json()).task_id,'scene-1');assert.equal(calls.length,5);
+ expectedPhotos=8;let eight=await worker.fetch(new Request('https://worker/compose',{method:'POST',body:form(8)}),env);assert.equal((await eight.json()).task_id,'scene-1');
+ let before=calls.length;let nine=await worker.fetch(new Request('https://worker/compose',{method:'POST',body:form(9)}),env);assert.equal(nine.status,400);assert.equal(calls.length,before);
  expectedPhotos=1;r=await worker.fetch(new Request('https://worker/compose',{method:'POST',body:form(1)}),env);assert.equal((await r.json()).task_id,'scene-1');
  r=await worker.fetch(new Request('https://worker/compose-status?task_id=scene-1'),env);assert.equal((await r.json()).image_url,'https://images.test/result.jpg');
  outage=true;r=await worker.fetch(new Request('https://worker/compose-status?task_id=scene-1'),env);assert.equal(r.status,502);assert.equal((await r.json()).status,undefined);outage=false;
