@@ -103,3 +103,10 @@ por fallos transitorios.
 ## Commit
 Un solo commit local, sin push ni deploy. Hash: ver `git log -1` tras esta nota (se añade abajo por
 Kimo MD/Nico si hace falta referenciarlo).
+
+## Segunda vuelta — D4 (corrección de Nico, `revision-motion-10sep-video-directo.md`)
+- `studio.js:39-45`: sustituido el bloque `catch` de `createVideo()` por el de D4 del plan — restaura el
+  guardián `!e.rejected` en la rama `uncertain` y añade la rama `waiting` (fallos transitorios de sondeo)
+  antes de la rama `e.detail`. Único archivo tocado; `node --check studio.js` OK; `git diff` muestra solo
+  ese bloque (+2/-1 líneas). Hash de este commit: ver `git log -1 --format=%H` (un commit no puede
+  contener su propio hash final; se lo doy a Kimo MD en el reporte de esta ronda).

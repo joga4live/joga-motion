@@ -39,8 +39,9 @@ async function createVideo(){
  }catch(e){
   if(e.terminal){studio.videoTask=null;studio.message='failed';studio.detail=e.detail||'';}
   else if(e.outdated)studio.message='outdated';
+  else if(!submitting&&studio.videoTask&&!e.rejected){studio.message='waiting';studio.detail=e.detail||'';}
   else if(e.detail){studio.message='error';studio.detail=e.detail;}
-  else if(submitting){studio.uncertain=true;studio.message='uncertain';}
+  else if(submitting&&!e.rejected){studio.uncertain=true;studio.message='uncertain';}
   else studio.message=studio.videoTask?'waiting':'error';
  }finally{studio.busy=false;render();}
 }
