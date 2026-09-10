@@ -133,6 +133,7 @@ function renderEditor() {
   document.getElementById('fileInput').disabled = state.busy;
   document.getElementById('uploadZone').disabled = state.busy;
   renderScenes(); renderQuickPrompts();
+  if (typeof renderComposer === 'function') renderComposer();
 }
 function triggerUpload() { if (!state.busy) document.getElementById('fileInput').click(); }
 function handleFile(input) { addFiles(Array.from(input.files)); input.value = ''; }

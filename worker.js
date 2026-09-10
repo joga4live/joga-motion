@@ -64,6 +64,59 @@ export default {
     const url = new URL(request.url);
     const authHeader = `Key ${env.HF_API_KEY_ID}:${env.HF_API_KEY_SECRET}`;
 
+    // Two reference photos -> one reviewable image, using the documented Nano Banana contract.
+    if (request.method === 'POST' && url.pathname === '/compose') {
+      try {
+        let form;
+        try { form = await request.formData(); } catch { return json({ error: 'multipart form required' }, 400); }
+        const photos = form.getAll('images');
+        const prompt = String(form.get('prompt') || '').trim();
+        const aspect = String(form.get('aspect_ratio') || '16:9');
+        if (photos.length < 1 || photos.length > 2) return json({ error: 'one or two reference photos required' }, 400);
+        if (!prompt || prompt.length > 1800) return json({ error: 'prompt required (max 1800 characters)' }, 400);
+        if (!['16:9', '9:16', '1:1'].includes(aspect)) return json({ error: 'invalid aspect ratio' }, 400);
+        for (const file of photos) {
+          if (!(file instanceof File) || !IMAGE_TYPES.has(file.type) || !file.size || file.size > MAX_IMAGE_BYTES) {
+            return json({ error: 'each photo must be JPEG, PNG or WebP, between 1 byte and 10MB' }, 400);
+          }
+        }
+        const inputImages = [];
+        for (const file of photos) inputImages.push({ type: 'image_url', image_url: await uploadImage(file, authHeader) });
+        const result = await fetch(`${HF_BASE}/nano-banana`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+          body: JSON.stringify({
+            prompt: 'Create a single coherent photographic scene, not a collage or split screen. '
+              + 'Use the supplied photos as subject references; if two people are supplied, show both together. '
+              + 'Keep the referenced subjects recognizable, with distinct faces and natural anatomy. '
+              + 'Show the referenced subjects in the setting and action described below, composed as a starting frame for a video. '
+              + 'User scene: ' + prompt,
+            input_images: inputImages, num_images: 1, aspect_ratio: aspect, output_format: 'jpeg',
+          }),
+        });
+        const data = await readJson(result);
+        if (result.ok && data.request_id) return json({ task_id: data.request_id });
+        return json({ error: hfError(result.status, data) }, 502);
+      } catch { return json({ error: 'Scene service unavailable. Submission may have been accepted; do not retry automatically.' }, 502); }
+    }
+
+    if (request.method === 'GET' && ['/compose-status', '/compose-image'].includes(url.pathname)) {
+      const taskId = url.searchParams.get('task_id') || '';
+      if (!TASK_ID.test(taskId)) return json({ error: 'task_id required' }, 400);
+      try {
+        const { ok, code, data } = await fetchStatus(taskId, authHeader);
+        if (!ok) return json({ error: hfError(code, data) }, 502);
+        const imageUrl = data.images?.[0]?.url;
+        if (['failed', 'nsfw', 'canceled'].includes(data.status)) return json({ status: 'failed', error: data.error || data.status });
+        if (data.status !== 'completed') return json({ status: 'processing' });
+        if (!imageUrl) return json({ status: 'failed', error: 'completed without image url' });
+        if (url.pathname === '/compose-status') return json({ status: 'completed', image_url: imageUrl });
+        // The client sends only a task ID, never an arbitrary download URL.
+        const image = await fetch(imageUrl);
+        if (!image.ok) return json({ error: 'Could not retrieve scene image' }, 502);
+        return new Response(image.body, { headers: { ...CORS, 'Content-Type': image.headers.get('Content-Type') || 'image/jpeg' } });
+      } catch { return json({ error: 'Scene status temporarily unavailable' }, 502); }
+    }
+
     // POST /generate — multipart/form-data: image (file), prompt, duration (5|10)
     if (request.method === 'POST' && url.pathname === '/generate') {
       let form;

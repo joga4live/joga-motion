@@ -899,3 +899,25 @@ body:has(.page-creator) .toast { background: #b42318; max-width: calc(100vw - 32
 @media(prefers-reduced-motion:reduce) {
   .page-creator *, .page-creator *::before { transition: none !important; }
 }
+
+/* Shared-scene studio */
+.page-creator .compose-panel { grid-column: 1 / -1; padding: 30px; background: #fff; border: 1px solid var(--border); border-radius: 18px; }
+.page-creator .compose-heading { max-width: 660px; margin-bottom: 26px; }
+.page-creator .compose-heading h2 { font-size: 1.6rem; letter-spacing: -.04em; margin: 10px 0; }
+.page-creator .compose-badge { color: var(--violet); font-size: .66rem; font-weight: 600; letter-spacing: .12em; }
+.page-creator .compose-grid { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); gap: 28px; }
+.page-creator .compose-inputs { display: flex; flex-direction: column; align-items: stretch; gap: 14px; min-width: 0; }
+.page-creator .compose-photos { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.page-creator .compose-photo { border: 1px dashed #c4b7dd; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 12px; background: #faf8ff; font-size: .8rem; font-weight: 600; min-width: 0; }
+.page-creator .compose-photo img { width: 100%; height: 120px; object-fit: contain; border-radius: 6px; }
+.page-creator .compose-photo input { width: 100%; font-size: .7rem; color: var(--text-2); }
+.page-creator .compose-photo small { font-size: .65rem; font-weight: 400; color: var(--text-2); }
+.page-creator .compose-inputs .ctrl-label { margin: 6px 0 0; }
+.page-creator .compose-examples { display: flex; gap: 6px; flex-wrap: wrap; }
+.page-creator #composeAspect { padding: 10px; background: #fff; border: 1px solid var(--border); border-radius: 8px; color: var(--text); }
+.page-creator .compose-review { background: linear-gradient(145deg,#f5f1fd,#f9fafc); border-radius: 14px; border: 1px solid #e9e2f5; padding: 22px; display: flex; flex-direction: column; gap: 18px; align-self: start; min-width: 0; }
+.page-creator #composePreview { width: 100%; max-height: 440px; object-fit: contain; border-radius: 10px; }
+.page-creator #composeEmpty { padding: 70px 16px; text-align: center; }
+.page-creator [hidden] { display: none !important; }
+@media(max-width:900px) { .page-creator .compose-grid { grid-template-columns: minmax(0,1fr); } }
+@media(max-width:480px) { .page-creator .compose-panel { padding: 20px; } .page-creator .compose-photo { padding: 10px; } .page-creator .compose-review { padding: 16px; } }

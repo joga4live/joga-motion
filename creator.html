@@ -33,6 +33,37 @@
   <!-- LAYOUT -->
   <div class="creator-body">
 
+    <section class="compose-panel" aria-labelledby="composeTitle">
+      <div class="compose-heading">
+        <span class="compose-badge" data-t="co_badge"></span>
+        <h2 id="composeTitle" data-t="co_title"></h2>
+        <p class="scene-note" data-t="co_intro"></p>
+      </div>
+      <div class="compose-grid">
+        <div class="compose-inputs">
+          <div class="compose-photos">
+            <label class="compose-photo"><span data-t="co_person1"></span><img id="refPreview0" hidden alt="" /><input id="refInput0" type="file" accept="image/jpeg,image/png,image/webp" /><small data-t="co_formats"></small></label>
+            <label class="compose-photo"><span data-t="co_person2"></span><img id="refPreview1" hidden alt="" /><input id="refInput1" type="file" accept="image/jpeg,image/png,image/webp" /><small data-t="co_formats"></small></label>
+          </div>
+          <label class="ctrl-label" for="composePrompt" data-t="co_prompt"></label>
+          <textarea id="composePrompt" class="ctrl-textarea" maxlength="1800" rows="4" data-t="co_placeholder" data-t-attr="placeholder"></textarea>
+          <div class="compose-examples" id="composeExamples"></div>
+          <label class="ctrl-label" for="composeAspect" data-t="co_format"></label>
+          <select id="composeAspect"><option value="16:9" data-t="co_landscape"></option><option value="9:16" data-t="co_portrait"></option><option value="1:1" data-t="co_square"></option></select>
+          <p class="scene-note" data-t="co_note"></p>
+          <button type="button" id="composeBtn" class="btn-gen"></button>
+          <p id="composeStatus" class="scene-note" role="status" aria-live="polite"></p>
+        </div>
+        <div class="compose-review">
+          <p class="ctrl-label" data-t="co_review"></p>
+          <p id="composeEmpty" class="scene-note" data-t="co_empty"></p>
+          <img id="composePreview" hidden data-t="co_preview_alt" data-t-attr="alt" />
+          <p class="scene-note" data-t="co_next"></p>
+          <button type="button" class="btn-gen" id="useComposition" disabled data-t="co_use"></button>
+        </div>
+      </div>
+    </section>
+
     <!-- LEFT: Upload -->
     <div class="upload-col">
       <button type="button" class="upload-zone" id="uploadZone" onclick="triggerUpload()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
@@ -224,5 +255,6 @@ Object.assign(STRINGS.en, {
 
 document.addEventListener('DOMContentLoaded', () => { applyLang(); initCreator(); });
 </script>
+<script src="composer.js"></script>
 </body>
 </html>
