@@ -24,6 +24,7 @@
         <input type="file" id="photos" accept="image/jpeg,image/png,image/webp" hidden>
         <div id="thumbnails" class="thumbnails"></div>
         <p class="hint" data-copy="referenceHint"></p>
+        <div id="modes" class="examples"></div>
         <label class="section-title prompt-title" for="description"><span class="label"><span>02</span> <span data-copy="description"></span></span></label>
         <textarea id="description" maxlength="1800" rows="5"></textarea>
         <div class="examples" id="examples"></div>
@@ -37,8 +38,9 @@
           <div id="emptyPreview" class="empty-preview"><div class="film-icon" aria-hidden="true">▷</div><h3 data-copy="emptyTitle"></h3><p data-copy="emptyText"></p></div>
           <div id="progress" class="progress" hidden><span class="spinner" aria-hidden="true"></span><h3 id="progressTitle"></h3><p data-copy="progressNote"></p></div>
           <video id="video" controls playsinline hidden></video>
+          <img id="scene" hidden alt="">
         </div>
-        <div class="preview-footer"><p data-copy="previewHint"></p><a id="download" class="primary" hidden data-copy="download"></a></div>
+        <div class="preview-footer"><p data-copy="previewHint"></p><a id="download" class="primary" hidden data-copy="download"></a><button id="again" type="button" hidden data-copy="otherScene"></button></div>
       </section>
     </div>
     <p class="footer-note" data-copy="footer"></p>

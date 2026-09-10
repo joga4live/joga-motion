@@ -64,7 +64,7 @@ export default {
     const url = new URL(request.url);
     const authHeader = `Key ${env.HF_API_KEY_ID}:${env.HF_API_KEY_SECRET}`;
 
-    // Up to eight reference photos -> one reviewable image, using the documented Nano Banana contract.
+    // One reference photo -> one new scene, using the documented Soul Reference contract.
     if (request.method === 'POST' && url.pathname === '/compose') {
       try {
         let form;
@@ -72,7 +72,7 @@ export default {
         const photos = form.getAll('images');
         const prompt = String(form.get('prompt') || '').trim();
         const aspect = String(form.get('aspect_ratio') || '16:9');
-        if (photos.length < 1 || photos.length > 8) return json({ error: 'one to eight reference photos required' }, 400);
+        if (photos.length !== 1) return json({ error: 'one reference photo required' }, 400);
         if (!prompt || prompt.length > 1800) return json({ error: 'prompt required (max 1800 characters)' }, 400);
         if (!['16:9', '9:16', '1:1'].includes(aspect)) return json({ error: 'invalid aspect ratio' }, 400);
         for (const file of photos) {
@@ -80,17 +80,14 @@ export default {
             return json({ error: 'each photo must be JPEG, PNG or WebP, between 1 byte and 10MB' }, 400);
           }
         }
-        const inputImages = [];
-        for (const file of photos) inputImages.push({ type: 'image_url', image_url: await uploadImage(file, authHeader) });
-        const result = await fetch(`${HF_BASE}/nano-banana`, {
+        const imageUrl = await uploadImage(photos[0], authHeader);
+        const result = await fetch(`${HF_BASE}/higgsfield-ai/soul/reference`, {
           method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
           body: JSON.stringify({
-            prompt: 'Create a single coherent photographic scene, not a collage or split screen. '
-              + 'Use the supplied photos as subject references; include the referenced people, objects and places as described by the user. '
-              + 'Keep the referenced subjects recognizable, with distinct faces and natural anatomy. '
-              + 'Show the referenced subjects in the setting and action described below, composed as a starting frame for a video. '
-              + 'User scene: ' + prompt,
-            input_images: inputImages, num_images: 1, aspect_ratio: aspect, output_format: 'jpeg',
+            prompt: 'Photorealistic cinematic scene, natural light, composed as the opening frame of a video. '
+              + 'The person or subject from the reference image appears in the scene, recognizable, with natural anatomy. '
+              + 'Scene: ' + prompt,
+            image_reference_url: imageUrl, aspect_ratio: aspect, resolution: '720p', batch_size: 1,
           }),
         });
         const data = await readJson(result);
