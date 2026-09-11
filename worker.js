@@ -10,6 +10,10 @@ const CORS = {
 
 const HF_BASE = 'https://api.higgsfield.ai';
 const MODEL = 'kling-video/v2.1/pro/image-to-video';
+const FAL_BASE = 'https://queue.fal.run';
+const FAL_IMAGE_MODEL = 'fal-ai/nano-banana/edit';
+const FAL_IMAGE_APP = 'fal-ai/nano-banana';
+const MAX_REFERENCE_PHOTOS = 8;
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const TASK_ID = /^[A-Za-z0-9-]{1,80}$/;
@@ -57,22 +61,33 @@ async function fetchStatus(taskId, authHeader) {
   return { ok: st.ok, code: st.status, data: await readJson(st) };
 }
 
+async function falStatus(taskId, falHeaders) {
+  const st = await fetch(`${FAL_BASE}/${FAL_IMAGE_APP}/requests/${taskId}/status`, { headers: falHeaders });
+  return { ok: st.ok, code: st.status, data: await readJson(st) };
+}
+async function falResult(taskId, falHeaders) {
+  const r = await fetch(`${FAL_BASE}/${FAL_IMAGE_APP}/requests/${taskId}`, { headers: falHeaders });
+  return { ok: r.ok, code: r.status, data: await readJson(r) };
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
     const url = new URL(request.url);
     const authHeader = `Key ${env.HF_API_KEY_ID}:${env.HF_API_KEY_SECRET}`;
+    const falHeaders = { 'Content-Type': 'application/json', 'Authorization': `Key ${env.FAL_KEY}` };
 
-    // One reference photo -> one new scene, using the documented Soul Reference contract.
+    // One to eight reference photos -> one new scene; image step via fal.ai nano-banana/edit, video stays on Higgsfield.
     if (request.method === 'POST' && url.pathname === '/compose') {
+      if (!env.FAL_KEY) return json({ error: 'FAL_KEY missing in Worker secrets' }, 502);
       try {
         let form;
         try { form = await request.formData(); } catch { return json({ error: 'multipart form required' }, 400); }
         const photos = form.getAll('images');
         const prompt = String(form.get('prompt') || '').trim();
         const aspect = String(form.get('aspect_ratio') || '16:9');
-        if (photos.length !== 1) return json({ error: 'one reference photo required' }, 400);
+        if (photos.length < 1 || photos.length > MAX_REFERENCE_PHOTOS) return json({ error: 'one to eight reference photos required' }, 400);
         if (!prompt || prompt.length > 1800) return json({ error: 'prompt required (max 1800 characters)' }, 400);
         if (!['16:9', '9:16', '1:1'].includes(aspect)) return json({ error: 'invalid aspect ratio' }, 400);
         for (const file of photos) {
@@ -80,14 +95,15 @@ export default {
             return json({ error: 'each photo must be JPEG, PNG or WebP, between 1 byte and 10MB' }, 400);
           }
         }
-        const imageUrl = await uploadImage(photos[0], authHeader);
-        const result = await fetch(`${HF_BASE}/higgsfield-ai/soul/reference`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+        const imageUrls = [];
+        for (const file of photos) imageUrls.push(await uploadImage(file, authHeader));
+        const result = await fetch(`${FAL_BASE}/${FAL_IMAGE_MODEL}`, {
+          method: 'POST', headers: falHeaders,
           body: JSON.stringify({
             prompt: 'Photorealistic cinematic scene, natural light, composed as the opening frame of a video. '
-              + 'The person or subject from the reference image appears in the scene, recognizable, with natural anatomy. '
-              + 'Scene: ' + prompt,
-            image_reference_url: imageUrl, aspect_ratio: aspect, resolution: '720p', batch_size: 1,
+              + 'The people and subjects from the reference photos appear in the scene; keep their faces, hair and bodies recognizable, with natural anatomy. '
+              + 'No glow effects, no halos, no text. Scene: ' + prompt,
+            image_urls: imageUrls, num_images: 1, output_format: 'jpeg', aspect_ratio: aspect,
           }),
         });
         const data = await readJson(result);
@@ -100,11 +116,12 @@ export default {
       const taskId = url.searchParams.get('task_id') || '';
       if (!TASK_ID.test(taskId)) return json({ error: 'task_id required' }, 400);
       try {
-        const { ok, code, data } = await fetchStatus(taskId, authHeader);
+        const { ok, code, data } = await falStatus(taskId, falHeaders);
         if (!ok) return json({ error: hfError(code, data) }, 502);
-        const imageUrl = data.images?.[0]?.url;
-        if (['failed', 'nsfw', 'canceled'].includes(data.status)) return json({ status: 'failed', error: data.error || data.status });
-        if (data.status !== 'completed') return json({ status: 'processing' });
+        if (data.status !== 'COMPLETED') return json({ status: 'processing' });
+        const { ok: rOk, code: rCode, data: rData } = await falResult(taskId, falHeaders);
+        if (!rOk) return json({ error: hfError(rCode, rData) }, 502);
+        const imageUrl = rData.images?.[0]?.url;
         if (!imageUrl) return json({ status: 'failed', error: 'completed without image url' });
         if (url.pathname === '/compose-status') return json({ status: 'completed', image_url: imageUrl });
         // The client sends only a task ID, never an arbitrary download URL.
