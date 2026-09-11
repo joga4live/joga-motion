@@ -82,3 +82,56 @@ Serví `creator.html` desde el repo (lectura) con un servidor en el scratchpad q
 - **La doc puede contradecir lo medido; el plan debe decir cuál gana y por qué.** fal documenta la URL de estado con `{model-id}` completo y en la práctica hay que quitar el sub-path. El plan lo hizo bien (registró el 405). Regla: cada contrato externo en un plan lleva «doc dice X, medido Y» cuando no coinciden.
 - **Un arnés sin control no vale.** Trece mutaciones, trece rojas; sin eso, los 84 verdes serían humo. Una de las mutaciones hizo que mi propio arnés reventara en vez de marcar rojo (parseaba JSON fuera de una comprobación); lo endurecí antes de contar. Regla: cada `await r.json()` del arnés va dentro de una comprobación o con `catch`.
 - Sin tropiezos del proceso esta vez: nombre de reporte por ronda respetado, servidor y copias mutadas fuera del repo, proceso detenido por PID exacto y nombre de comando, no por número de puerto.
+
+---
+
+# Vuelta D3 — 8b5437c
+
+## Veredicto: APROBADO
+
+Cambio de una línea en `worker.js:112`: el `catch (e)` externo de `/compose` devuelve `e.message` (o `Scene service unavailable` si no hay mensaje) en vez del texto genérico y falso «Submission may have been accepted; do not retry automatically».
+
+## 1. Alcance y sintaxis
+
+- `git show 8b5437c --stat`: solo `worker.js` (+1/−1) y `tests/composer-worker.mjs` (+16/−4). Correcto.
+- Entre `4d3e519` y `8b5437c` hay dos commits de docs (`79c50a3`, `7637a05`: `.joga/handoff/*`, `.claude/skills/verify/SKILL.md`, `plan-motion-niveles-10sep.md`); no son código y no son de Tavo en esta vuelta. Informativo.
+- `node --check worker.js`: OK. `node tests/worker.mjs`: PASA. `node tests/composer-worker.mjs`: PASA (incluye los dos casos nuevos: presign 401 y PUT 524).
+- `git status`: `implementacion-…` y `plan-…` modificados (de Kimo/Tavo), `revision-procedimiento-cloudflare-11sep.md` sin seguimiento (otra ronda). No los audité.
+
+## 2. Worker con `fetch` simulado (arnés propio en scratchpad, fuera del repo)
+
+Mismo arnés corrido sobre `worker.js` de `8b5437c` y sobre `git show 4d3e519:worker.js` (control). 1 foto JPEG, prompt válido, 16:9.
+
+| Caso | `4d3e519` (control) | `8b5437c` |
+|---|---|---|
+| Camino feliz | 200 `{task_id:"01a0-test"}`; llamadas: presign → PUT → POST fal | idéntico |
+| Presign 401 `{detail:'Invalid credentials'}` | 502 texto genérico | 502 `upload-url 401: Invalid credentials` |
+| PUT 524 | 502 texto genérico | 502 `image PUT failed (524)` |
+| `fetch` a fal lanza `TypeError('fetch failed')` | 502 texto genérico | 502 `fetch failed` |
+| `fetch` al PUT lanza `TypeError('fetch failed')` | 502 texto genérico | 502 `fetch failed` |
+| Excepción sin `message` (`throw {code:'weird'}`) | 502 texto genérico | 502 `Scene service unavailable` |
+| `Error('')` (message vacío) | 502 texto genérico | 502 `Scene service unavailable` |
+
+El control demuestra que el arnés distingue las dos versiones: seis casos con el texto viejo en `4d3e519`, seis con la causa real en `8b5437c`.
+
+## 3. Fuga de datos sensibles en `e.message`
+
+Qué puede lanzar el bloque `try`:
+- `uploadImage`: `'upload-url ' + hfError(status, p)` — `hfError` solo toma `p.detail ?? p.message ?? p.error`, nunca `p.upload_url` ni `p.upload_headers`. Medido: presign 200 con `upload_url` firmada pero sin `public_url` → `upload-url 200: weird`, sin la URL. `image PUT failed (N)` — solo el status.
+- `fetch` (runtime): `TypeError: fetch failed` / «Network connection lost» — sin URL ni cabeceras.
+- `authHeader` y `falHeaders` son locales; ningún mensaje los toca. Medido: cero apariciones de los valores de `HF_API_KEY_ID`, `HF_API_KEY_SECRET`, `FAL_KEY` en ninguna respuesta.
+
+Único camino teórico: si el **cuerpo de error** de Higgsfield (no JSON) contuviera una URL firmada, `readJson` la recorta a 200 caracteres y saldría en `upload-url 500: …`. Es contradictorio (la URL firmada es el producto de un presign que tuvo éxito) y el mismo patrón `hfError` ya se usa fuera del `catch` para fal desde antes. No bloquea.
+
+## 4. Acoplamiento del frontend
+
+`studio.js:33` lee `(await res.clone().json()).error` como `e.detail`; no busca el texto viejo ni «retry». Ningún archivo del repo referencia «Submission may have been accepted» tras el cambio. El texto viejo desaparece sin dejar dependencias.
+
+## 5. Lo que este cambio no resuelve (informativo)
+
+Ahora el 502 dirá **por qué** falló la escena real (los 43 s y 68 s de hoy). Si la causa es `upload-url 401`, el problema está en las llaves Higgsfield del Worker; si es `image PUT failed (524)`, en el PUT al bucket firmado; si es `fetch failed`, en la red del Worker hacia fal. Hay que volver a probar la escena en producción después de desplegar para leer la causa.
+
+## Lecciones de esta vuelta
+
+- **Un `catch` que inventa una causa es peor que uno que no dice nada.** «Submission may have been accepted» afirmaba un hecho no medido y llevó a suponer que fal recibía la petición cuando ni siquiera se había llegado a fal. Regla: un `catch` genérico nunca afirma estado del proveedor; devuelve `e.message` o un texto neutro.
+- Sin tropiezos del proceso: arnés y copias de `worker.js` en el scratchpad, control sobre `4d3e519` antes de creer los verdes, sin gasto, sin push, sin deploy.
