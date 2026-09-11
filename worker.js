@@ -35,6 +35,15 @@ function hfError(status, data) {
   return `${status}: ${typeof d === 'string' ? d : JSON.stringify(d)}`;
 }
 
+function falError(status, data) {
+  const d = data?.detail;
+  if (Array.isArray(d) && d.length) {
+    const first = d[0] || {};
+    return `${first.type || status}: ${first.msg || 'request rejected'}`;
+  }
+  return hfError(status, data);
+}
+
 async function uploadImage(file, authHeader) {
   const presign = await fetch(`${HF_BASE}/files/generate-upload-url`, {
     method: 'POST',
@@ -45,13 +54,33 @@ async function uploadImage(file, authHeader) {
   if (!presign.ok || !p.upload_url || !p.public_url) {
     throw new Error('upload-url ' + hfError(presign.status, p));
   }
-  const put = await fetch(p.upload_url, {
+  let put = await fetch(p.upload_url, {
     method: 'PUT',
     headers: p.upload_headers || { 'Content-Type': file.type },
     body: await file.arrayBuffer(),
   });
+  if (!put.ok && put.status >= 500) {
+    await new Promise((r) => setTimeout(r, 1000));
+    put = await fetch(p.upload_url, {
+      method: 'PUT',
+      headers: p.upload_headers || { 'Content-Type': file.type },
+      body: await file.arrayBuffer(),
+    });
+  }
   if (!put.ok) throw new Error(`image PUT failed (${put.status})`);
   return p.public_url;
+}
+
+async function uploadToFal(file, falKey) {
+  const init = await fetch('https://rest.fal.ai/storage/upload/initiate?storage_type=fal-cdn-v3', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Key ${falKey}` },
+    body: JSON.stringify({ content_type: file.type, file_name: `joga-${Date.now()}.${file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'}` }),
+  });
+  const i = await readJson(init);
+  if (!init.ok || !i.upload_url || !i.file_url) throw new Error('fal upload-url ' + hfError(init.status, i));
+  const put = await fetch(i.upload_url, { method: 'PUT', headers: { 'Content-Type': file.type }, body: await file.arrayBuffer() });
+  if (!put.ok) throw new Error(`fal image PUT failed (${put.status})`);
+  return i.file_url;
 }
 
 async function fetchStatus(taskId, authHeader) {
@@ -96,7 +125,7 @@ export default {
           }
         }
         const imageUrls = [];
-        for (const file of photos) imageUrls.push(await uploadImage(file, authHeader));
+        for (const file of photos) imageUrls.push(await uploadToFal(file, env.FAL_KEY));
         const result = await fetch(`${FAL_BASE}/${FAL_IMAGE_MODEL}`, {
           method: 'POST', headers: falHeaders,
           body: JSON.stringify({
@@ -108,7 +137,7 @@ export default {
         });
         const data = await readJson(result);
         if (result.ok && data.request_id) return json({ task_id: data.request_id });
-        return json({ error: hfError(result.status, data) }, 502);
+        return json({ error: falError(result.status, data) }, 502);
       } catch (e) { return json({ error: e && e.message ? e.message : 'Scene service unavailable' }, 502); }
     }
 
@@ -124,7 +153,10 @@ export default {
           return json({ status: 'failed', error: data.error_type ? `${data.error_type}: ${data.error}` : String(data.error) });
         }
         const { ok: rOk, code: rCode, data: rData } = await falResult(taskId, falHeaders);
-        if (!rOk) return json({ error: hfError(rCode, rData) }, 502);
+        if (!rOk) {
+          if (rCode >= 400 && rCode < 500) return json({ status: 'failed', error: falError(rCode, rData) });
+          return json({ error: falError(rCode, rData) }, 502);
+        }
         const imageUrl = rData.images?.[0]?.url;
         if (!imageUrl) return json({ status: 'failed', error: 'completed without image url' });
         if (url.pathname === '/compose-status') return json({ status: 'completed', image_url: imageUrl });
