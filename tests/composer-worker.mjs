@@ -1,11 +1,17 @@
 import assert from 'node:assert/strict';
 import worker from '../worker.js';
 const env={HF_API_KEY_ID:'test',HF_API_KEY_SECRET:'test',FAL_KEY:'test-fal-key'};
-const saved=globalThis.fetch;let calls=[],falStatusValue='COMPLETED',falEditError=null,falStatusError=null;
+const saved=globalThis.fetch;let calls=[],falStatusValue='COMPLETED',falEditError=null,falStatusError=null,presignStatus=null,putStatus=null;
 globalThis.fetch=async (url,opts={})=>{
  calls.push({url,opts});
- if(url.endsWith('/files/generate-upload-url'))return Response.json({upload_url:'https://upload.test/file',public_url:'https://images.test/ref.jpg'});
- if(url.startsWith('https://upload.test/'))return new Response('');
+ if(url.endsWith('/files/generate-upload-url')){
+  if(presignStatus)return Response.json({detail:'Invalid credentials'},{status:presignStatus});
+  return Response.json({upload_url:'https://upload.test/file',public_url:'https://images.test/ref.jpg'});
+ }
+ if(url.startsWith('https://upload.test/')){
+  if(putStatus)return new Response('',{status:putStatus});
+  return new Response('');
+ }
  if(url.endsWith('/fal-ai/nano-banana/edit')){
   if(falEditError)return Response.json({detail:falEditError.detail},{status:falEditError.status});
   let d=JSON.parse(opts.body);
@@ -33,6 +39,12 @@ try{
  falEditError={status:422,detail:'bad image'};
  r=await worker.fetch(new Request('https://worker/compose',{method:'POST',body:form(1)}),env);assert.equal(r.status,502);assert.match((await r.json()).error,/bad image/);
  falEditError=null;
+ presignStatus=401;
+ r=await worker.fetch(new Request('https://worker/compose',{method:'POST',body:form(1)}),env);assert.equal(r.status,502);assert.match((await r.json()).error,/upload-url 401/);
+ presignStatus=null;
+ putStatus=524;
+ r=await worker.fetch(new Request('https://worker/compose',{method:'POST',body:form(1)}),env);assert.equal(r.status,502);assert.match((await r.json()).error,/image PUT failed \(524\)/);
+ putStatus=null;
  falStatusValue='IN_PROGRESS';
  r=await worker.fetch(new Request('https://worker/compose-status?task_id=01a0-test'),env);assert.equal((await r.json()).status,'processing');
  falStatusValue='COMPLETED';

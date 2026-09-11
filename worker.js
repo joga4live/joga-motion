@@ -109,7 +109,7 @@ export default {
         const data = await readJson(result);
         if (result.ok && data.request_id) return json({ task_id: data.request_id });
         return json({ error: hfError(result.status, data) }, 502);
-      } catch { return json({ error: 'Scene service unavailable. Submission may have been accepted; do not retry automatically.' }, 502); }
+      } catch (e) { return json({ error: e && e.message ? e.message : 'Scene service unavailable' }, 502); }
     }
 
     if (request.method === 'GET' && ['/compose-status', '/compose-image'].includes(url.pathname)) {
