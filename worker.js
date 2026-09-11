@@ -119,6 +119,10 @@ export default {
         const { ok, code, data } = await falStatus(taskId, falHeaders);
         if (!ok) return json({ error: hfError(code, data) }, 502);
         if (data.status !== 'COMPLETED') return json({ status: 'processing' });
+        // fal has no FAILED state: a terminal failure arrives as COMPLETED with error/error_type.
+        if (data.error) {
+          return json({ status: 'failed', error: data.error_type ? `${data.error_type}: ${data.error}` : String(data.error) });
+        }
         const { ok: rOk, code: rCode, data: rData } = await falResult(taskId, falHeaders);
         if (!rOk) return json({ error: hfError(rCode, rData) }, 502);
         const imageUrl = rData.images?.[0]?.url;

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import worker from '../worker.js';
 const env={HF_API_KEY_ID:'test',HF_API_KEY_SECRET:'test',FAL_KEY:'test-fal-key'};
-const saved=globalThis.fetch;let calls=[],falStatusValue='COMPLETED',falEditError=null;
+const saved=globalThis.fetch;let calls=[],falStatusValue='COMPLETED',falEditError=null,falStatusError=null;
 globalThis.fetch=async (url,opts={})=>{
  calls.push({url,opts});
  if(url.endsWith('/files/generate-upload-url'))return Response.json({upload_url:'https://upload.test/file',public_url:'https://images.test/ref.jpg'});
@@ -13,7 +13,10 @@ globalThis.fetch=async (url,opts={})=>{
   assert.match(d.prompt,/mountain/);assert.equal(d.aspect_ratio,'9:16');assert.equal(d.num_images,1);assert.equal(d.output_format,'jpeg');
   return Response.json({request_id:'01a0-test',status_url:'https://queue.fal.run/fal-ai/nano-banana/requests/01a0-test/status',response_url:'https://queue.fal.run/fal-ai/nano-banana/requests/01a0-test'});
  }
- if(url.endsWith('/fal-ai/nano-banana/requests/01a0-test/status'))return Response.json({status:falStatusValue});
+ if(url.endsWith('/fal-ai/nano-banana/requests/01a0-test/status')){
+  if(falStatusError)return Response.json({status:'COMPLETED',error:falStatusError.error,error_type:falStatusError.error_type});
+  return Response.json({status:falStatusValue});
+ }
  if(url.endsWith('/fal-ai/nano-banana/requests/01a0-test'))return Response.json({images:[{url:'https://v3b.fal.media/x.jpg'}]});
  if(url==='https://v3b.fal.media/x.jpg')return new Response('image',{headers:{'Content-Type':'image/jpeg'}});
  throw new Error('Unexpected URL '+url);
@@ -33,6 +36,12 @@ try{
  falStatusValue='IN_PROGRESS';
  r=await worker.fetch(new Request('https://worker/compose-status?task_id=01a0-test'),env);assert.equal((await r.json()).status,'processing');
  falStatusValue='COMPLETED';
+ falStatusError={error:'content policy',error_type:'CONTENT_FILTER'};
+ calls=[];
+ r=await worker.fetch(new Request('https://worker/compose-status?task_id=01a0-test'),env);
+ assert.deepEqual(await r.json(),{status:'failed',error:'CONTENT_FILTER: content policy'});
+ assert.equal(calls.length,1);
+ falStatusError=null;
  r=await worker.fetch(new Request('https://worker/compose-image?task_id=../bad'),env);assert.equal(r.status,400);
  r=await worker.fetch(new Request('https://worker/compose-image?task_id=01a0-test'),env);assert.equal(r.headers.get('Content-Type'),'image/jpeg');assert.equal(await r.text(),'image');
  console.log('PASS: fal.ai nano-banana/edit image contract, one-to-eight validation, FAL_KEY guard, transient failures and trusted image download');
