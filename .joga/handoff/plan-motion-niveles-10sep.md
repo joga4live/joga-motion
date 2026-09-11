@@ -1,6 +1,6 @@
 # Plan — Joga Motion, ronda motion-niveles-10sep: Básico / Intermedio / Avanzado
 
-Base: la ronda `motion-escena-10sep` aprobada y publicada (commit a fijar por Kimo al lanzar; no construir antes). Decisión de José (10-sep): tres niveles de calidad **por modelo, no por proveedor**; el cliente nunca ve el proveedor; OpenArt fuera del Worker.
+Base: la ronda `motion-fal-escena-11sep` aprobada y publicada (commit a fijar por Kimo al lanzar; no construir antes). Decisión de José (10-sep): tres niveles de calidad **por modelo, no por proveedor**; el cliente nunca ve el proveedor; OpenArt fuera del Worker.
 
 ## Por qué solo Kling en esta ronda (medido)
 
@@ -12,7 +12,7 @@ Base: la ronda `motion-escena-10sep` aprobada y publicada (commit a fijar por Ki
 | Intermedio | `kling-video/v2.1/standard/image-to-video` | 4,48 | $0,28 |
 | Avanzado | `kling-video/v2.1/pro/image-to-video` | 7,84 | $0,49 |
 
-Nivel por defecto: **Intermedio** (pendiente de que José lo confirme; si prefiere Avanzado, es un cambio de una constante).
+Nivel por defecto: **Intermedio** (confirmado por José el 11-sep).
 
 ## `worker.js` — solo `/generate`
 
