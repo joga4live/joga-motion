@@ -1,8 +1,6 @@
-// ═══════════════════════════════════════════════
-// JOGA MOTION — Cloudflare Worker v3
-// Proxy: Higgsfield AI image-to-video
+// JOGA MOTION — Cloudflare Worker
+// Proxy: Higgsfield AI image-to-video (Kling v2.1 pro)
 // Secrets: HF_API_KEY_ID, HF_API_KEY_SECRET
-// ═══════════════════════════════════════════════
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +9,14 @@ const CORS = {
 };
 
 const HF_BASE = 'https://api.higgsfield.ai';
+const MODEL = 'kling-video/v2.1/pro/image-to-video';
+const FAL_BASE = 'https://queue.fal.run';
+const FAL_IMAGE_MODEL = 'fal-ai/nano-banana/edit';
+const FAL_IMAGE_APP = 'fal-ai/nano-banana';
+const MAX_REFERENCE_PHOTOS = 8;
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const TASK_ID = /^[A-Za-z0-9-]{1,80}$/;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -19,106 +25,215 @@ function json(data, status = 200) {
   });
 }
 
+async function readJson(res) {
+  const text = await res.text();
+  try { return JSON.parse(text); } catch { return { detail: text.slice(0, 200) }; }
+}
+
+function hfError(status, data) {
+  const d = data?.detail ?? data?.message ?? data?.error ?? 'Higgsfield API error';
+  return `${status}: ${typeof d === 'string' ? d : JSON.stringify(d)}`;
+}
+
+function falError(status, data) {
+  const d = data?.detail;
+  if (Array.isArray(d) && d.length) {
+    const first = d[0] || {};
+    return `${first.type || status}: ${first.msg || 'request rejected'}`;
+  }
+  return hfError(status, data);
+}
+
+async function uploadImage(file, authHeader) {
+  const presign = await fetch(`${HF_BASE}/files/generate-upload-url`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
+    body: JSON.stringify({ content_type: file.type }),
+  });
+  const p = await readJson(presign);
+  if (!presign.ok || !p.upload_url || !p.public_url) {
+    throw new Error('upload-url ' + hfError(presign.status, p));
+  }
+  let put = await fetch(p.upload_url, {
+    method: 'PUT',
+    headers: p.upload_headers || { 'Content-Type': file.type },
+    body: await file.arrayBuffer(),
+  });
+  if (!put.ok && put.status >= 500) {
+    await new Promise((r) => setTimeout(r, 1000));
+    put = await fetch(p.upload_url, {
+      method: 'PUT',
+      headers: p.upload_headers || { 'Content-Type': file.type },
+      body: await file.arrayBuffer(),
+    });
+  }
+  if (!put.ok) throw new Error(`image PUT failed (${put.status})`);
+  return p.public_url;
+}
+
+async function uploadToFal(file, falKey) {
+  const init = await fetch('https://rest.fal.ai/storage/upload/initiate?storage_type=fal-cdn-v3', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Key ${falKey}` },
+    body: JSON.stringify({ content_type: file.type, file_name: `joga-${Date.now()}.${file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg'}` }),
+  });
+  const i = await readJson(init);
+  if (!init.ok || !i.upload_url || !i.file_url) throw new Error('fal upload-url ' + hfError(init.status, i));
+  const put = await fetch(i.upload_url, { method: 'PUT', headers: { 'Content-Type': file.type }, body: await file.arrayBuffer() });
+  if (!put.ok) throw new Error(`fal image PUT failed (${put.status})`);
+  return i.file_url;
+}
+
+async function fetchStatus(taskId, authHeader) {
+  const st = await fetch(`${HF_BASE}/requests/${taskId}/status`, {
+    headers: { 'Authorization': authHeader },
+  });
+  return { ok: st.ok, code: st.status, data: await readJson(st) };
+}
+
+async function falStatus(taskId, falHeaders) {
+  const st = await fetch(`${FAL_BASE}/${FAL_IMAGE_APP}/requests/${taskId}/status`, { headers: falHeaders });
+  return { ok: st.ok, code: st.status, data: await readJson(st) };
+}
+async function falResult(taskId, falHeaders) {
+  const r = await fetch(`${FAL_BASE}/${FAL_IMAGE_APP}/requests/${taskId}`, { headers: falHeaders });
+  return { ok: r.ok, code: r.status, data: await readJson(r) };
+}
+
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
-    const url   = new URL(request.url);
-    const keyId = (env.HF_API_KEY_ID || '').trim();
-    const keySecret = (env.HF_API_KEY_SECRET || '').trim();
-    const auth  = `Key ${keyId}:${keySecret}`;
+    const url = new URL(request.url);
+    const authHeader = `Key ${env.HF_API_KEY_ID}:${env.HF_API_KEY_SECRET}`;
+    const falHeaders = { 'Content-Type': 'application/json', 'Authorization': `Key ${env.FAL_KEY}` };
 
-    // ── GET /ping ────────────────────────────────
-    if (url.pathname === '/ping') {
-      return json({ ok: true, key_id_preview: keyId.slice(0, 8) + '...', key_id_len: keyId.length });
+    // One to eight reference photos -> one new scene; image step via fal.ai nano-banana/edit, video stays on Higgsfield.
+    if (request.method === 'POST' && url.pathname === '/compose') {
+      if (!env.FAL_KEY) return json({ error: 'FAL_KEY missing in Worker secrets' }, 502);
+      try {
+        let form;
+        try { form = await request.formData(); } catch { return json({ error: 'multipart form required' }, 400); }
+        const photos = form.getAll('images');
+        const prompt = String(form.get('prompt') || '').trim();
+        const aspect = String(form.get('aspect_ratio') || '16:9');
+        if (photos.length < 1 || photos.length > MAX_REFERENCE_PHOTOS) return json({ error: 'one to eight reference photos required' }, 400);
+        if (!prompt || prompt.length > 1800) return json({ error: 'prompt required (max 1800 characters)' }, 400);
+        if (!['16:9', '9:16', '1:1'].includes(aspect)) return json({ error: 'invalid aspect ratio' }, 400);
+        for (const file of photos) {
+          if (!(file instanceof File) || !IMAGE_TYPES.has(file.type) || !file.size || file.size > MAX_IMAGE_BYTES) {
+            return json({ error: 'each photo must be JPEG, PNG or WebP, between 1 byte and 10MB' }, 400);
+          }
+        }
+        const imageUrls = [];
+        for (const file of photos) imageUrls.push(await uploadToFal(file, env.FAL_KEY));
+        const result = await fetch(`${FAL_BASE}/${FAL_IMAGE_MODEL}`, {
+          method: 'POST', headers: falHeaders,
+          body: JSON.stringify({
+            prompt: 'Photorealistic cinematic scene, natural light, composed as the opening frame of a video. '
+              + 'The people and subjects from the reference photos appear in the scene; keep their faces, hair and bodies recognizable, with natural anatomy. '
+              + 'No glow effects, no halos, no text. Scene: ' + prompt,
+            image_urls: imageUrls, num_images: 1, output_format: 'jpeg', aspect_ratio: aspect,
+          }),
+        });
+        const data = await readJson(result);
+        if (result.ok && data.request_id) return json({ task_id: data.request_id });
+        return json({ error: falError(result.status, data) }, 502);
+      } catch (e) { return json({ error: e && e.message ? e.message : 'Scene service unavailable' }, 502); }
     }
 
-    // ── POST /upload — store image temporarily ───
-    // Receives base64, caches image at /img/:id, returns public URL
-    if (request.method === 'POST' && url.pathname === '/upload') {
-      const body = await request.json();
-      const { image_b64, mime } = body;
-      if (!image_b64) return json({ error: 'image_b64 required' }, 400);
-
-      const id = crypto.randomUUID();
-      const imgType = mime || 'image/jpeg';
-      const binary = Uint8Array.from(atob(image_b64), c => c.charCodeAt(0));
-
-      // Cache the image for 10 minutes
-      const imgResponse = new Response(binary, {
-        headers: {
-          'Content-Type': imgType,
-          'Cache-Control': 'public, max-age=600',
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
-
-      const cacheKey = new Request(`${url.origin}/img/${id}`, { method: 'GET' });
-      const cache = caches.default;
-      ctx.waitUntil(cache.put(cacheKey, imgResponse.clone()));
-
-      return json({ image_url: `${url.origin}/img/${id}`, id });
+    if (request.method === 'GET' && ['/compose-status', '/compose-image'].includes(url.pathname)) {
+      const taskId = url.searchParams.get('task_id') || '';
+      if (!TASK_ID.test(taskId)) return json({ error: 'task_id required' }, 400);
+      try {
+        const { ok, code, data } = await falStatus(taskId, falHeaders);
+        if (!ok) return json({ error: hfError(code, data) }, 502);
+        if (data.status !== 'COMPLETED') return json({ status: 'processing' });
+        // fal has no FAILED state: a terminal failure arrives as COMPLETED with error/error_type.
+        if (data.error) {
+          return json({ status: 'failed', error: data.error_type ? `${data.error_type}: ${data.error}` : String(data.error) });
+        }
+        const { ok: rOk, code: rCode, data: rData } = await falResult(taskId, falHeaders);
+        if (!rOk) {
+          if (rCode >= 400 && rCode < 500) return json({ status: 'failed', error: falError(rCode, rData) });
+          return json({ error: falError(rCode, rData) }, 502);
+        }
+        const imageUrl = rData.images?.[0]?.url;
+        if (!imageUrl) return json({ status: 'failed', error: 'completed without image url' });
+        if (url.pathname === '/compose-status') return json({ status: 'completed', image_url: imageUrl });
+        // The client sends only a task ID, never an arbitrary download URL.
+        const image = await fetch(imageUrl);
+        if (!image.ok) return json({ error: 'Could not retrieve scene image' }, 502);
+        return new Response(image.body, { headers: { ...CORS, 'Content-Type': image.headers.get('Content-Type') || 'image/jpeg' } });
+      } catch { return json({ error: 'Scene status temporarily unavailable' }, 502); }
     }
 
-    // ── GET /img/:id — serve cached image ────────
-    if (request.method === 'GET' && url.pathname.startsWith('/img/')) {
-      const cache = caches.default;
-      const cached = await cache.match(request);
-      if (cached) return cached;
-      return new Response('Image not found or expired', { status: 404 });
-    }
-
-    // ── POST /generate ───────────────────────────
+    // POST /generate — multipart/form-data: image (file), prompt, duration (5|10)
     if (request.method === 'POST' && url.pathname === '/generate') {
-      const body = await request.json();
-      const { image_url, prompt, duration } = body;
+      let form;
+      try { form = await request.formData(); } catch { return json({ error: 'multipart form required' }, 400); }
+
+      const file = form.get('image');
+      const prompt = String(form.get('prompt') || '').trim();
+      const duration = Number(form.get('duration'));
+      if (![5, 10].includes(duration)) return json({ error: 'duration must be 5 or 10' }, 400);
+      if (prompt.length > 2500) return json({ error: 'prompt too long (max 2500 characters)' }, 400);
 
       if (!prompt) return json({ error: 'prompt required' }, 400);
-      if (!image_url) return json({ error: 'image_url required' }, 400);
+      if (!(file instanceof File) || !IMAGE_TYPES.has(file.type)) return json({ error: 'image must be JPEG, PNG or WebP' }, 400);
+      if (file.size > MAX_IMAGE_BYTES) return json({ error: 'image too large (max 10MB)' }, 400);
 
-      const endpoint = `${HF_BASE}/higgsfield-ai/dop/standard`;
-      const reqBody = {
-        image_url,
-        prompt,
-      };
-      if (duration) reqBody.duration = String(duration);
+      let imageUrl;
+      try { imageUrl = await uploadImage(file, authHeader); }
+      catch (e) { return json({ error: e.message }, 502); }
 
-      const hfRes = await fetch(endpoint, {
+      const hfRes = await fetch(`${HF_BASE}/${MODEL}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': auth,
-        },
-        body: JSON.stringify(reqBody),
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': authHeader },
+        body: JSON.stringify({ prompt, image_url: imageUrl, duration }),
       });
-
-      const data = await hfRes.json();
-
-      if (data.request_id) {
-        return json({ task_id: data.request_id });
-      }
-      return json({ error: 'Higgsfield error', raw: data }, 500);
+      const data = await readJson(hfRes);
+      if (hfRes.ok && data.request_id) return json({ task_id: data.request_id });
+      return json({ error: hfError(hfRes.status, data), hf_status: hfRes.status }, 502);
     }
 
-    // ── GET /status?task_id=xxx ──────────────────
+    // GET /status?task_id=xxx
     if (request.method === 'GET' && url.pathname === '/status') {
-      const taskId = url.searchParams.get('task_id');
-      if (!taskId) return json({ error: 'task_id required' }, 400);
+      const taskId = url.searchParams.get('task_id') || '';
+      if (!TASK_ID.test(taskId)) return json({ error: 'task_id required' }, 400);
 
-      const res = await fetch(`${HF_BASE}/requests/${taskId}/status`, {
-        headers: { 'Authorization': auth },
-      });
-      const data = await res.json();
+      const { ok, code, data } = await fetchStatus(taskId, authHeader);
+      if (!ok) return json({ error: hfError(code, data) }, 502);
 
       if (data.status === 'completed') {
-        const videoUrl = data.output?.url || data.outputs?.[0]?.url || data.output;
-        return json({ status: 'completed', video_url: videoUrl });
+        const videoUrl = data.video?.url;
+        if (videoUrl) return json({ status: 'completed', video_url: videoUrl });
+        return json({ status: 'failed', error: 'completed without video url' });
       }
-      if (data.status === 'failed') {
-        return json({ status: 'failed', error: data.error });
+      if (data.status === 'failed' || data.status === 'nsfw' || data.status === 'canceled') {
+        return json({ status: 'failed', error: data.error || data.status });
       }
-      return json({ status: 'processing' });
+      return json({ status: 'processing', hf_status: data.status });
+    }
+
+    // GET /download?task_id=xxx — el Worker relee video.url; el cliente nunca manda URLs
+    if (request.method === 'GET' && url.pathname === '/download') {
+      const taskId = url.searchParams.get('task_id') || '';
+      if (!TASK_ID.test(taskId)) return json({ error: 'task_id required' }, 400);
+
+      const { ok, code, data } = await fetchStatus(taskId, authHeader);
+      if (!ok) return json({ error: hfError(code, data) }, 502);
+      const videoUrl = data.video?.url;
+      if (data.status !== 'completed' || !videoUrl) return json({ error: `video not ready (${data.status})` }, 409);
+
+      const v = await fetch(videoUrl);
+      if (!v.ok) return json({ error: `video fetch failed (${v.status})` }, 502);
+      return new Response(v.body, {
+        headers: {
+          ...CORS,
+          'Content-Type': v.headers.get('Content-Type') || 'video/mp4',
+          'Content-Disposition': `attachment; filename="joga-motion-${taskId}.mp4"`,
+        },
+      });
     }
 
     return json({ error: 'Not found' }, 404);

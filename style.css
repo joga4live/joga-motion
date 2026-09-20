@@ -753,3 +753,7 @@ input[type=range].intensity::-webkit-slider-thumb {
   .nav { padding: 16px 20px; }
   .nav .nav-link { display: none; }
 }
+
+/* Botones: estados genéricos */
+button:disabled { opacity: .45; cursor: not-allowed; }
+button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
