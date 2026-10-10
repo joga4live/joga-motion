@@ -1,4 +1,4 @@
-// JOGA MOTION — Cloudflare Worker
+// JOG-A MOTION — Cloudflare Worker
 // Proxy: Higgsfield AI image-to-video (Kling v2.1 pro)
 // Secrets: HF_API_KEY_ID, HF_API_KEY_SECRET
 

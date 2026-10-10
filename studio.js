@@ -8,7 +8,7 @@ let language;try{language=localStorage.getItem('jiLang')==='en'?'en':'es';}catch
 const $=id=>document.getElementById(id), t=key=>TEXT[language][key];
 function resetGeneration(){studio.videoTask=null;studio.videoUrl=null;studio.stage='';studio.message='';studio.detail='';studio.uncertain=false;if(studio.imageUrl)URL.revokeObjectURL(studio.imageUrl);studio.imageTask=null;studio.imageReady=false;studio.imageUrl=null;studio.sceneBlob=null;$('video').pause();$('video').removeAttribute('src');$('download').removeAttribute('href');$('scene').removeAttribute('src');}
 function render(){
- document.documentElement.lang=language;document.title='Joga Motion — '+t('create');
+ document.documentElement.lang=language;document.title='Jog-A Motion — '+t('create');
  TEXT[language].referenceHint=studio.mode==='scene'?TEXT[language].hintScene:TEXT[language].hintMotion;TEXT[language].cost=studio.mode==='scene'?TEXT[language].costScene:TEXT[language].costMotion;
  document.querySelectorAll('[data-copy]').forEach(el=>el.textContent=t(el.dataset.copy));
  $('language').textContent=language==='es'?'English':'Español';$('description').placeholder=t(studio.mode==='scene'?'placeholderScene':'placeholder');
