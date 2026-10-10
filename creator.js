@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════
-   JOGA MOTION — Creator Logic v3
+   JOG-A MOTION — Creator Logic v3
    Higgsfield AI image-to-video
    ═══════════════════════════════════ */
 

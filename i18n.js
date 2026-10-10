@@ -1,16 +1,16 @@
-// Joga Motion — Bilingual i18n (ES/EN)
+// Jog-A Motion — Bilingual i18n (ES/EN)
 const JM_LANG_KEY = 'jiLang';
 
 const STRINGS = {
   es: {
     // Nav
-    nav_back: 'Joga Intelligence',
-    nav_books: 'Joga Books',
+    nav_back: 'Jog-A Intelligence',
+    nav_books: 'Jog-A Books',
     nav_create: 'Crear Video',
 
     // Hero
     hero_tag: 'Imagen a Video con IA',
-    hero_h1_1: 'JOGA',
+    hero_h1_1: 'JOG-A',
     hero_h1_2: 'MOTION',
     hero_sub: 'Sube cualquier imagen. Describe el movimiento. Obtén un video que cobra vida.',
     hero_cta: 'CREAR MI VIDEO',
@@ -40,13 +40,13 @@ const STRINGS = {
     feat4_desc: 'Sin esperas. Tu video listo en segundos, tuyo para siempre.',
 
     // Ecosystem
-    eco_title: 'Parte del ecosistema Joga',
-    eco_sub: 'Joga Motion potencia todos tus proyectos creativos',
-    eco_intelligence: 'Joga Intelligence',
+    eco_title: 'Parte del ecosistema Jog-A',
+    eco_sub: 'Jog-A Motion potencia todos tus proyectos creativos',
+    eco_intelligence: 'Jog-A Intelligence',
     eco_intelligence_desc: 'La plataforma central de crecimiento personal. Anima tus metas.',
-    eco_books: 'Joga Books',
+    eco_books: 'Jog-A Books',
     eco_books_desc: 'Da vida a las portadas de tus libros. Videos para cada título.',
-    eco_audio: 'Joga Audio',
+    eco_audio: 'Jog-A Audio',
     eco_audio_desc: 'Crea visuales para tus audiolibros. Motion + sonido = impacto.',
 
     // Pricing
@@ -59,7 +59,7 @@ const STRINGS = {
     price_cta: 'CREAR AHORA — ES GRATIS',
 
     // Creator page
-    c_title: 'Joga Motion Creator',
+    c_title: 'Jog-A Motion Creator',
     c_upload_title: 'Tu imagen',
     c_upload_hint: 'Arrastra aquí o haz clic para subir',
     c_upload_sub: 'JPG, PNG, WebP · Máx 10MB',
@@ -96,11 +96,11 @@ const STRINGS = {
     footer_part: 'Parte de',
   },
   en: {
-    nav_back: 'Joga Intelligence',
-    nav_books: 'Joga Books',
+    nav_back: 'Jog-A Intelligence',
+    nav_books: 'Jog-A Books',
     nav_create: 'Create Video',
     hero_tag: 'Image to Video with AI',
-    hero_h1_1: 'JOGA',
+    hero_h1_1: 'JOG-A',
     hero_h1_2: 'MOTION',
     hero_sub: 'Upload any image. Describe the movement. Get a video that comes to life.',
     hero_cta: 'CREATE MY VIDEO',
@@ -124,13 +124,13 @@ const STRINGS = {
     feat3_desc: 'Videos ready for Instagram, TikTok, presentations and more.',
     feat4_title: 'Instant download',
     feat4_desc: 'No waiting. Your video ready in seconds, yours forever.',
-    eco_title: 'Part of the Joga ecosystem',
-    eco_sub: 'Joga Motion powers all your creative projects',
-    eco_intelligence: 'Joga Intelligence',
+    eco_title: 'Part of the Jog-A ecosystem',
+    eco_sub: 'Jog-A Motion powers all your creative projects',
+    eco_intelligence: 'Jog-A Intelligence',
     eco_intelligence_desc: 'The central personal growth platform. Animate your goals.',
-    eco_books: 'Joga Books',
+    eco_books: 'Jog-A Books',
     eco_books_desc: 'Bring your book covers to life. Videos for every title.',
-    eco_audio: 'Joga Audio',
+    eco_audio: 'Jog-A Audio',
     eco_audio_desc: 'Create visuals for your audiobooks. Motion + sound = impact.',
     price_title: 'Start free today',
     price_free: 'FREE',
@@ -139,7 +139,7 @@ const STRINGS = {
     price_pro_desc: 'Unlimited videos · HD no watermark · Priority processing',
     price_pro_price: '$19 / month',
     price_cta: 'CREATE NOW — IT\'S FREE',
-    c_title: 'Joga Motion Creator',
+    c_title: 'Jog-A Motion Creator',
     c_upload_title: 'Your image',
     c_upload_hint: 'Drag here or click to upload',
     c_upload_sub: 'JPG, PNG, WebP · Max 10MB',
